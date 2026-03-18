@@ -1,0 +1,178 @@
+local Players = game:GetService("Players")
+local UIS = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local Lighting = game:GetService("Lighting")
+local GuiService = game:GetService("GuiService")
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+local Mouse = LocalPlayer:GetMouse()
+local Camera = workspace.CurrentCamera
+
+if PlayerGui:FindFirstChild("KutakWare_V35_1") then PlayerGui:FindFirstChild("KutakWare_V35_1"):Destroy() end
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "KutakWare_V35_1"; ScreenGui.ResetOnSpawn = false; ScreenGui.Parent = PlayerGui
+
+local Config = {
+    ESP = false, Aimlock = false, FullBright = false, AutoLockpick = false,
+    AimPart = "Head", Smoothness = 0.15, AimFOV = 150, CameraFOV = 70, Visible = true
+}
+
+local OriginalSettings = {
+    Brightness = Lighting.Brightness, ClockTime = Lighting.ClockTime,
+    GlobalShadows = Lighting.GlobalShadows, Ambient = Lighting.Ambient
+}
+
+-- === КОРРЕКТНЫЙ 2D ESP С ОЧИСТКОЙ ===
+local ESP_Objects = {}
+
+local function RemoveESP(player)
+    if ESP_Objects[player] then
+        for _, obj in pairs(ESP_Objects[player]) do
+            if obj.Remove then obj:Remove() end
+        end
+        ESP_Objects[player] = nil
+    end
+end
+
+local function CreateDrawingESP(player)
+    if player == LocalPlayer then return end
+    
+    local Box = Drawing.new("Square"); Box.Thickness = 1; Box.Filled = false; Box.Color = Color3.new(1, 1, 1); Box.Visible = false
+    local HealthOutline = Drawing.new("Square"); HealthOutline.Thickness = 1; HealthOutline.Filled = true; HealthOutline.Color = Color3.new(0, 0, 0); HealthOutline.Visible = false
+    local HealthBar = Drawing.new("Square"); HealthBar.Thickness = 1; HealthBar.Filled = true; HealthBar.Visible = false
+    local Name = Drawing.new("Text"); Name.Size = 13; Name.Center = true; Name.Outline = true; Name.Color = Color3.new(1,1,1); Name.Visible = false
+
+    ESP_Objects[player] = {Box = Box, HealthOutline = HealthOutline, HealthBar = HealthBar, Name = Name}
+
+    local conn
+    conn = RunService.RenderStepped:Connect(function()
+        local char = player.Character
+        local hum = char and char:FindFirstChildOfClass("Humanoid")
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        
+        if Config.ESP and char and hum and hrp and hum.Health > 0 and char.Parent then
+            local pos, onS = Camera:WorldToViewportPoint(hrp.Position)
+            
+            if onS then
+                local sizeY = (Camera:WorldToViewportPoint(hrp.Position + Vector3.new(0, 3, 0)).Y - Camera:WorldToViewportPoint(hrp.Position - Vector3.new(0, 3, 0)).Y)
+                local sizeX = sizeY / 2
+                local boxX, boxY = pos.X - (sizeX / 2), pos.Y - (sizeY / 2)
+                
+                Box.Position = Vector2.new(boxX, boxY); Box.Size = Vector2.new(sizeX, sizeY); Box.Visible = true
+                
+                local healthPercent = math.clamp(hum.Health / hum.MaxHealth, 0, 1)
+                local barX, barY, barW, barH = boxX - 6, boxY, 3, sizeY
+                
+                HealthOutline.Position = Vector2.new(barX, barY); HealthOutline.Size = Vector2.new(barW, barH); HealthOutline.Visible = true
+                
+                local currentBarH = barH * healthPercent
+                HealthBar.Position = Vector2.new(barX, barY + (barH - currentBarH))
+                HealthBar.Size = Vector2.new(barW, currentBarH)
+                HealthBar.Color = Color3.fromHSV(healthPercent * 0.35, 1, 1)
+                HealthBar.Visible = true
+                
+                Name.Position = Vector2.new(pos.X, boxY - 15); Name.Text = player.Name; Name.Visible = true
+                return
+            end
+        end
+        Box.Visible = false; HealthOutline.Visible = false; HealthBar.Visible = false; Name.Visible = false
+    end)
+    
+    -- Очистка при смерти или выходе
+    player.CharacterRemoving:Connect(function() 
+        Box.Visible = false; HealthOutline.Visible = false; HealthBar.Visible = false; Name.Visible = false 
+    end)
+end
+
+Players.PlayerRemoving:Connect(RemoveESP)
+for _, p in pairs(Players:GetPlayers()) do CreateDrawingESP(p) end
+Players.PlayerAdded:Connect(CreateDrawingESP)
+
+-- === UI И ЛОГИКА (ОСТАЛЬНОЕ) ===
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 420, 0, 450); MainFrame.Position = UDim2.new(0.5, -210, 0.2, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15); MainFrame.Parent = ScreenGui; Instance.new("UICorner", MainFrame)
+
+local Header = Instance.new("Frame")
+Header.Size = UDim2.new(1, 0, 0, 50); Header.BackgroundColor3 = Color3.fromRGB(25, 25, 25); Header.Parent = MainFrame; Instance.new("UICorner", Header)
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, 0, 1, 0); Title.BackgroundTransparency = 1; Title.Text = "KUTAK WARE V35.1 | CLEAN ESP"; Title.TextColor3 = Color3.fromRGB(255, 255, 255); Title.Font = Enum.Font.RobotoMono; Title.TextSize = 17; Title.Parent = Header
+
+-- Dragging
+local dragT, dragS, startP
+Header.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then dragT = true; dragS = i.Position; startP = MainFrame.Position end end)
+UIS.InputChanged:Connect(function(i) if dragT and i.UserInputType == Enum.UserInputType.MouseMovement then local delta = i.Position - dragS; MainFrame.Position = UDim2.new(startP.X.Scale, startP.X.Offset + delta.X, startP.Y.Scale, startP.Y.Offset + delta.Y) end end)
+UIS.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then dragT = false end end)
+
+local LeftSide = Instance.new("Frame", MainFrame); LeftSide.Size = UDim2.new(0.5, -15, 1, -70); LeftSide.Position = UDim2.new(0, 10, 0, 60); LeftSide.BackgroundTransparency = 1
+local RightSide = Instance.new("Frame", MainFrame); RightSide.Size = UDim2.new(0.5, -15, 1, -70); RightSide.Position = UDim2.new(0.5, 5, 0, 60); RightSide.BackgroundTransparency = 1
+
+local function createBtn(text, parent, order)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, 0, 0, 35); btn.Position = UDim2.new(0, 0, 0, (order-1)*42); btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    btn.Text = text; btn.TextColor3 = Color3.fromRGB(255, 255, 255); btn.Font = Enum.Font.RobotoMono; btn.TextSize = 12; btn.Parent = parent; Instance.new("UICorner", btn)
+    return btn
+end
+
+local EspBtn = createBtn("🧊 2D ESP: [OFF]", LeftSide, 1)
+local AimBtn = createBtn("🎯 AIMLOCK: [OFF]", LeftSide, 2)
+local BrightBtn = createBtn("☀️ FULLBRIGHT: [OFF]", LeftSide, 3)
+local LockBtn = createBtn("🔒 LOCKPICK: [OFF]", LeftSide, 4)
+local TargetBtn = createBtn("🎯 TARGET: HEAD", LeftSide, 5)
+
+local function createSlider(name, parent, order)
+    local f = Instance.new("Frame", parent); f.Size = UDim2.new(1, 0, 0, 55); f.Position = UDim2.new(0, 0, 0, (order-1)*62); f.BackgroundColor3 = Color3.fromRGB(25, 25, 25); Instance.new("UICorner", f)
+    local l = Instance.new("TextLabel", f); l.Size = UDim2.new(1, 0, 0, 25); l.BackgroundTransparency = 1; l.Text = name; l.TextColor3 = Color3.fromRGB(255, 255, 255); l.Font = Enum.Font.RobotoMono; l.TextSize = 11
+    local b = Instance.new("Frame", f); b.Size = UDim2.new(0.85, 0, 0, 4); b.Position = UDim2.new(0.075, 0, 0.7, 0); b.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    local d = Instance.new("Frame", b); d.Size = UDim2.new(0, 10, 0, 10); d.Position = UDim2.new(0.3, -5, 0.5, -5); d.BackgroundColor3 = Color3.fromRGB(255, 255, 255); Instance.new("UICorner", d).CornerRadius = UDim.new(1,0)
+    local s = false
+    f.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then s = true end end)
+    UIS.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then s = false end end)
+    return {bar = b, dot = d, label = l, getSliding = function() return s end}
+end
+
+local aimFovS = createSlider("AIM FOV: 150", RightSide, 1)
+local smoothS = createSlider("SMOOTHNESS: 0.15", RightSide, 2)
+local camFovS = createSlider("CAMERA FOV: 70", RightSide, 3)
+
+local FOVCircle = Drawing.new("Circle")
+FOVCircle.Thickness = 1.5; FOVCircle.Radius = Config.AimFOV; FOVCircle.Visible = false; FOVCircle.Color = Color3.new(1,1,1)
+
+RunService.RenderStepped:Connect(function()
+    if aimFovS.getSliding() then
+        local x = math.clamp((Mouse.X - aimFovS.bar.AbsolutePosition.X) / aimFovS.bar.AbsoluteSize.X, 0, 1)
+        aimFovS.dot.Position = UDim2.new(x, -5, 0.5, -5); Config.AimFOV = math.floor(x * 500) + 50; aimFovS.label.Text = "AIM FOV: " .. Config.AimFOV; FOVCircle.Radius = Config.AimFOV
+    elseif smoothS.getSliding() then
+        local x = math.clamp((Mouse.X - smoothS.bar.AbsolutePosition.X) / smoothS.bar.AbsoluteSize.X, 0, 1)
+        smoothS.dot.Position = UDim2.new(x, -5, 0.5, -5); Config.Smoothness = (x * 0.95) + 0.05; smoothS.label.Text = "SMOOTHNESS: " .. string.format("%.2f", Config.Smoothness)
+    elseif camFovS.getSliding() then
+        local x = math.clamp((Mouse.X - camFovS.bar.AbsolutePosition.X) / camFovS.bar.AbsoluteSize.X, 0, 1)
+        camFovS.dot.Position = UDim2.new(x, -5, 0.5, -5); Config.CameraFOV = math.floor(x * 50) + 70; camFovS.label.Text = "CAMERA FOV: " .. Config.CameraFOV; Camera.FieldOfView = Config.CameraFOV
+    end
+    FOVCircle.Position = Vector2.new(Mouse.X, Mouse.Y + GuiService:GetGuiInset().Y); FOVCircle.Visible = Config.Aimlock
+    
+    if Config.Aimlock and UIS:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
+        local target, dist = nil, Config.AimFOV
+        for _, v in pairs(Players:GetPlayers()) do
+            if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild(Config.AimPart) then
+                local pos, onS = Camera:WorldToViewportPoint(v.Character[Config.AimPart].Position)
+                if onS then local mD = (Vector2.new(pos.X, pos.Y) - Vector2.new(Mouse.X, Mouse.Y)).Magnitude
+                if mD < dist then dist = mD; target = v end end
+            end
+        end
+        if target then Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, target.Character[Config.AimPart].Position), Config.Smoothness) end
+    end
+end)
+
+EspBtn.MouseButton1Click:Connect(function() Config.ESP = not Config.ESP; EspBtn.Text = "🧊 2D ESP: [" .. (Config.ESP and "ON" or "OFF") .. "]"; EspBtn.BackgroundColor3 = Config.ESP and Color3.fromRGB(0, 100, 0) or Color3.fromRGB(30, 30, 30) end)
+AimBtn.MouseButton1Click:Connect(function() Config.Aimlock = not Config.Aimlock; AimBtn.Text = "🎯 AIMLOCK: [" .. (Config.Aimlock and "ON" or "OFF") .. "]"; AimBtn.BackgroundColor3 = Config.Aimlock and Color3.fromRGB(0, 100, 0) or Color3.fromRGB(30, 30, 30) end)
+BrightBtn.MouseButton1Click:Connect(function()
+    Config.FullBright = not Config.FullBright
+    if Config.FullBright then Lighting.Brightness = 2; Lighting.ClockTime = 14; Lighting.Ambient = Color3.new(1,1,1)
+    else Lighting.Brightness = OriginalSettings.Brightness; Lighting.ClockTime = OriginalSettings.ClockTime; Lighting.Ambient = OriginalSettings.Ambient end
+    BrightBtn.Text = "☀️ FULLBRIGHT: [" .. (Config.FullBright and "ON" or "OFF") .. "]"; BrightBtn.BackgroundColor3 = Config.FullBright and Color3.fromRGB(0, 100, 0) or Color3.fromRGB(30, 30, 30)
+end)
+LockBtn.MouseButton1Click:Connect(function() Config.AutoLockpick = not Config.AutoLockpick; LockBtn.Text = "🔒 LOCKPICK: [" .. (Config.AutoLockpick and "ON" or "OFF") .. "]"; LockBtn.BackgroundColor3 = Config.AutoLockpick and Color3.fromRGB(0, 100, 0) or Color3.fromRGB(30, 30, 30) end)
+TargetBtn.MouseButton1Click:Connect(function() Config.AimPart = (Config.AimPart == "Head") and "HumanoidRootPart" or "Head"; TargetBtn.Text = "🎯 TARGET: " .. (Config.AimPart == "Head" and "HEAD" or "TORSO") end)
+UIS.InputBegan:Connect(function(i, g) if not g and i.KeyCode == Enum.KeyCode.K then Config.Visible = not Config.Visible; MainFrame.Visible = Config.Visible end end)
