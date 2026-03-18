@@ -16,6 +16,7 @@ if PlayerGui:FindFirstChild("KutakWare_Final") then PlayerGui:FindFirstChild("Ku
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "KutakWare_Final"; ScreenGui.ResetOnSpawn = false; ScreenGui.Parent = PlayerGui
 
+-- Login Window
 local KeyFrame = Instance.new("Frame", ScreenGui)
 KeyFrame.Size = UDim2.new(0, 350, 0, 220); KeyFrame.Position = UDim2.new(0.5, -175, 0.4, 0)
 KeyFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20); Instance.new("UICorner", KeyFrame)
@@ -37,7 +38,7 @@ local function StartScript()
     KeyFrame:Destroy()
     
     local Config = {
-        ESP = false, Aimlock = false, FullBright = false, AutoLockpick = false,
+        ESP = false, Aimlock = false, FullBright = false, AutoLockpick = false, WallCheck = true,
         AimPart = "Head", Smoothness = 0.15, AimFOV = 150, CameraFOV = 70
     }
     
@@ -55,20 +56,37 @@ local function StartScript()
     local LeftSide = Instance.new("Frame", MainFrame); LeftSide.Size = UDim2.new(0.5, -15, 1, -80); LeftSide.Position = UDim2.new(0, 10, 0, 70); LeftSide.BackgroundTransparency = 1
     local RightSide = Instance.new("Frame", MainFrame); RightSide.Size = UDim2.new(0.5, -15, 1, -80); RightSide.Position = UDim2.new(0.5, 5, 0, 70); RightSide.BackgroundTransparency = 1
 
-    local function createBtn(text, parent, order, cb)
-        local btn = Instance.new("TextButton", parent); btn.Size = UDim2.new(1, 0, 0, 45); btn.Position = UDim2.new(0, 0, 0, (order-1)*52); btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-        btn.Text = text; btn.TextColor3 = Color3.new(1,1,1); btn.Font = Enum.Font.RobotoMono; btn.TextSize = 15; Instance.new("UICorner", btn)
+    local function updateBtnVisual(btn, state)
+        btn.BackgroundColor3 = state and Color3.fromRGB(40, 120, 40) or Color3.fromRGB(30, 30, 30)
+    end
+
+    local function createBtn(text, parent, order, cb, defaultState)
+        local btn = Instance.new("TextButton", parent); btn.Size = UDim2.new(1, 0, 0, 40); btn.Position = UDim2.new(0, 0, 0, (order-1)*46); btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+        btn.Text = text; btn.TextColor3 = Color3.new(1,1,1); btn.Font = Enum.Font.RobotoMono; btn.TextSize = 14; Instance.new("UICorner", btn)
+        if defaultState ~= nil then updateBtnVisual(btn, defaultState) end
         btn.MouseButton1Click:Connect(function() cb(btn) end) return btn
     end
 
-    createBtn("🧊 2D ESP: [OFF]", LeftSide, 1, function(b) Config.ESP = not Config.ESP; b.Text = "🧊 2D ESP: [" .. (Config.ESP and "ON" or "OFF") .. "]" end)
-    createBtn("🎯 AIMLOCK: [OFF]", LeftSide, 2, function(b) Config.Aimlock = not Config.Aimlock; b.Text = "🎯 AIMLOCK: [" .. (Config.Aimlock and "ON" or "OFF") .. "]" end)
-    createBtn("☀️ BRIGHT: [OFF]", LeftSide, 3, function(b) 
-        Config.FullBright = not Config.FullBright; b.Text = "☀️ BRIGHT: [" .. (Config.FullBright and "ON" or "OFF") .. "]"
+    createBtn("🧊 2D ESP: [OFF]", LeftSide, 1, function(b) 
+        Config.ESP = not Config.ESP; b.Text = "🧊 2D ESP: [" .. (Config.ESP and "ON" or "OFF") .. "]"; updateBtnVisual(b, Config.ESP) 
+    end, false)
+    
+    createBtn("🎯 AIMLOCK: [OFF]", LeftSide, 2, function(b) 
+        Config.Aimlock = not Config.Aimlock; b.Text = "🎯 AIMLOCK: [" .. (Config.Aimlock and "ON" or "OFF") .. "]"; updateBtnVisual(b, Config.Aimlock) 
+    end, false)
+
+    createBtn("🧱 WALL CHECK: [ON]", LeftSide, 3, function(b) 
+        Config.WallCheck = not Config.WallCheck; b.Text = "🧱 WALL CHECK: [" .. (Config.WallCheck and "ON" or "OFF") .. "]"; updateBtnVisual(b, Config.WallCheck) 
+    end, true)
+
+    createBtn("☀️ BRIGHT: [OFF]", LeftSide, 4, function(b) 
+        Config.FullBright = not Config.FullBright; b.Text = "☀️ BRIGHT: [" .. (Config.FullBright and "ON" or "OFF") .. "]"; updateBtnVisual(b, Config.FullBright)
         if not Config.FullBright then Lighting.Brightness = OrigLight.B; Lighting.ClockTime = OrigLight.C; Lighting.Ambient = OrigLight.A; Lighting.GlobalShadows = OrigLight.S end
+    end, false)
+
+    createBtn("🎯 TARGET: HEAD", LeftSide, 5, function(b) 
+        Config.AimPart = (Config.AimPart == "Head") and "HumanoidRootPart" or "Head"; b.Text = "🎯 TARGET: " .. (Config.AimPart == "Head" and "HEAD" or "TORSO") 
     end)
-    createBtn("🔒 LOCKPICK: [OFF]", LeftSide, 4, function(b) Config.AutoLockpick = not Config.AutoLockpick; b.Text = "🔒 LOCKPICK: [" .. (Config.AutoLockpick and "ON" or "OFF") .. "]" end)
-    createBtn("🎯 TARGET: HEAD", LeftSide, 5, function(b) Config.AimPart = (Config.AimPart == "Head") and "HumanoidRootPart" or "Head"; b.Text = "🎯 TARGET: " .. (Config.AimPart == "Head" and "HEAD" or "TORSO") end)
 
     local function createSlider(name, parent, order)
         local f = Instance.new("Frame", parent); f.Size = UDim2.new(1, 0, 0, 70); f.Position = UDim2.new(0, 0, 0, (order-1)*78); f.BackgroundColor3 = Color3.fromRGB(25, 25, 25); Instance.new("UICorner", f)
@@ -85,6 +103,7 @@ local function StartScript()
     local smoothS = createSlider("⚙️ SMOOTHNESS", RightSide, 2)
     local camFovS = createSlider("⚙️ CAM FOV", RightSide, 3)
 
+    -- ESP Logic (Bottom-up Health bar)
     local ESP_Objects = {}
     local function CreateDrawingESP(player)
         if player == LocalPlayer then return end
@@ -103,7 +122,9 @@ local function StartScript()
                     Box.Position = Vector2.new(boxX, boxY); Box.Size = Vector2.new(sizeX, sizeY); Box.Visible = true
                     
                     local hpPct = math.clamp(hum.Health / hum.MaxHealth, 0, 1)
-                    HealthBar.Position = Vector2.new(boxX - 6, boxY + (sizeY - (sizeY * hpPct))); HealthBar.Size = Vector2.new(3, sizeY * hpPct); HealthBar.Color = Color3.fromHSV(hpPct * 0.35, 1, 1); HealthBar.Visible = true
+                    HealthBar.Size = Vector2.new(3, sizeY * hpPct)
+                    HealthBar.Position = Vector2.new(boxX - 6, (boxY + sizeY) - (sizeY * hpPct))
+                    HealthBar.Color = Color3.fromHSV(hpPct * 0.35, 1, 1); HealthBar.Visible = true
                     
                     Name.Position = Vector2.new(pos.X, boxY - 18); Name.Text = player.Name; Name.Visible = true; return
                 end
@@ -113,9 +134,21 @@ local function StartScript()
     end
     for _, p in pairs(Players:GetPlayers()) do CreateDrawingESP(p) end; Players.PlayerAdded:Connect(CreateDrawingESP)
 
+    -- Aimlock & Wall Check Core
     local FOVCircle = Drawing.new("Circle"); FOVCircle.Thickness = 1; FOVCircle.Color = Color3.new(1,1,1); FOVCircle.Visible = false
+    
+    local function IsVisible(targetPart)
+        if not Config.WallCheck then return true end
+        local result = workspace:Raycast(Camera.CFrame.Position, targetPart.Position - Camera.CFrame.Position, RaycastParams.new())
+        local ignoreList = {LocalPlayer.Character, targetPart.Parent}
+        local params = RaycastParams.new(); params.FilterType = Enum.RaycastFilterType.Exclude; params.FilterDescendantsInstances = ignoreList
+        local ray = workspace:Raycast(Camera.CFrame.Position, targetPart.Position - Camera.CFrame.Position, params)
+        return ray == nil
+    end
+
     RunService.RenderStepped:Connect(function()
         if Config.FullBright then Lighting.Brightness = 2; Lighting.ClockTime = 14; Lighting.Ambient = Color3.new(1,1,1); Lighting.GlobalShadows = false end
+        
         if aimFovS.getSliding() then
             local x = math.clamp((Mouse.X - aimFovS.bar.AbsolutePosition.X) / aimFovS.bar.AbsoluteSize.X, 0, 1)
             aimFovS.dot.Position = UDim2.new(x, -7, 0.5, -7); Config.AimFOV = math.floor(x * 500) + 50; aimFovS.label.Text = "⚙️ AIM FOV: " .. Config.AimFOV
@@ -126,17 +159,26 @@ local function StartScript()
             local x = math.clamp((Mouse.X - camFovS.bar.AbsolutePosition.X) / camFovS.bar.AbsoluteSize.X, 0, 1)
             camFovS.dot.Position = UDim2.new(x, -7, 0.5, -7); Config.CameraFOV = math.floor(x * 50) + 70; camFovS.label.Text = "⚙️ CAM FOV: " .. Config.CameraFOV; Camera.FieldOfView = Config.CameraFOV
         end
+
         FOVCircle.Radius = Config.AimFOV; FOVCircle.Position = Vector2.new(Mouse.X, Mouse.Y + GuiService:GetGuiInset().Y)
-        FOVCircle.Visible = Config.Aimlock and MainFrame.Visible
+        FOVCircle.Visible = Config.Aimlock 
+
         if Config.Aimlock and UIS:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
             local target, dist = nil, Config.AimFOV
             for _, v in pairs(Players:GetPlayers()) do
                 if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild(Config.AimPart) then
-                    local pos, onS = Camera:WorldToViewportPoint(v.Character[Config.AimPart].Position)
-                    if onS then local mD = (Vector2.new(pos.X, pos.Y) - Vector2.new(Mouse.X, Mouse.Y)).Magnitude; if mD < dist then dist = mD; target = v end end
+                    local hum = v.Character:FindFirstChildOfClass("Humanoid")
+                    if hum and hum.Health > 0 then
+                        local part = v.Character[Config.AimPart]
+                        local pos, onS = Camera:WorldToViewportPoint(part.Position)
+                        if onS and IsVisible(part) then
+                            local mDist = (Vector2.new(pos.X, pos.Y) - Vector2.new(Mouse.X, Mouse.Y)).Magnitude
+                            if mDist < dist then dist = mDist; target = part end
+                        end
+                    end
                 end
             end
-            if target then Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, target.Character[Config.AimPart].Position), Config.Smoothness) end
+            if target then Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, target.Position), Config.Smoothness) end
         end
     end)
 
