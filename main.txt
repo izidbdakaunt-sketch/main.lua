@@ -8,7 +8,7 @@ local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 local Mouse = LocalPlayer:GetMouse()
 local Camera = workspace.CurrentCamera
 
-local CORRECT_KEY = "KUTAK-2026"
+local CORRECT_KEY = "EncryptionIsComingSoon"
 local DISCORD_LINK = "https://discord.gg/6R5V8QKYRG"
 
 if PlayerGui:FindFirstChild("KutakWare_Final") then PlayerGui:FindFirstChild("KutakWare_Final"):Destroy() end
