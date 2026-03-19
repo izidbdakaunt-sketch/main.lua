@@ -49,7 +49,8 @@ local function StartScript()
         ESP = false, Aimlock = false, FullBright = false, WallCheck = true,
         AimPart = "Head", Smoothness = 0.15, AimFOV = 150, CameraFOV = 70,
         Prediction = 0.165, AutoLockpick = false, 
-        ESPScrap = false, ESPCrates = false
+        ESPScrap = false, ESPCrates = false,
+        ShowDistance = false
     }
     
     local LockedTarget = nil
@@ -78,69 +79,52 @@ local function StartScript()
         btn.MouseButton1Click:Connect(function() cb(btn) end) return btn
     end
 
-    -- [ФУНКЦИЯ ВЗЛОМА]
-    local function checkLockpick(...)
-        local frames = { ... };
-        for i,v in pairs(frames) do
-            if v and v.Parent and v.Parent:FindFirstChild("UIScale") then
-                v.Parent.UIScale.Scale = 10
-            end
-            if (v and v.AbsolutePosition.Y >= 450 and v.AbsolutePosition.Y <= 550) then
-                if mouse1click then
-                    mouse1click(); task.wait(0.1); mouse1release();
-                end
-            end
-        end
-    end
-
-    -- [ЦИКЛ ВЗЛОМА]
-    task.spawn(function()
-        while true do task.wait()
-            if Config.AutoLockpick then
-                local lpgui = PlayerGui:FindFirstChild('LockpickGUI');
-                if lpgui and lpgui:FindFirstChild("MF") then
-                    local mf = lpgui.MF
-                    local lpFrame = mf:FindFirstChild("LP_Frame")
-                    if lpFrame and lpFrame:FindFirstChild("Frames") then
-                        local f = lpFrame.Frames
-                        local b1 = f:FindFirstChild("B1") and f.B1.Bar.Selection
-                        local b2 = f:FindFirstChild("B2") and f.B2.Bar.Selection
-                        local b3 = f:FindFirstChild("B3") and f.B3.Bar.Selection
-                        
-                        if b1 and b2 and b3 then
-                            checkLockpick(b1, b2, b3)
-                        end
-                    end
-                end
-            end
-        end
-    end)
-
     local function CreateDrawingESP(player)
         if player == LocalPlayer then return end
         local Box = Drawing.new("Square"); Box.Thickness = 1; Box.Color = Color3.new(1, 1, 1); Box.Visible = false
         local HealthBar = Drawing.new("Square"); HealthBar.Thickness = 1; HealthBar.Filled = true; HealthBar.Visible = false
         local Name = Drawing.new("Text"); Name.Size = 16; Name.Center = true; Name.Outline = true; Name.Color = Color3.new(1,1,1); Name.Visible = false
+        local DistText = Drawing.new("Text"); DistText.Size = 14; DistText.Center = true; DistText.Outline = true; DistText.Color = Color3.new(1,1,1); DistText.Visible = false
         
         local connection
         connection = RunService.RenderStepped:Connect(function()
-            if not player.Parent then Box:Remove(); HealthBar:Remove(); Name:Remove(); connection:Disconnect(); return end
-            local char = player.Character; local hum = char and char:FindFirstChildOfClass("Humanoid"); local hrp = char and char:FindFirstChild("HumanoidRootPart")
+            if not player.Parent then 
+                Box:Remove(); HealthBar:Remove(); Name:Remove(); DistText:Remove(); 
+                connection:Disconnect(); return 
+            end
+            
+            local char = player.Character; 
+            local hum = char and char:FindFirstChildOfClass("Humanoid"); 
+            local hrp = char and char:FindFirstChild("HumanoidRootPart")
+            local myHrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+
             if Config.ESP and char and hum and hrp and hum.Health > 0 then
                 local pos, onS = Camera:WorldToViewportPoint(hrp.Position)
                 if onS then
                     local sizeY = (Camera:WorldToViewportPoint(hrp.Position + Vector3.new(0, 3, 0)).Y - Camera:WorldToViewportPoint(hrp.Position - Vector3.new(0, 3, 0)).Y)
                     local sizeX = sizeY / 2; local boxX, boxY = pos.X - (sizeX/2), pos.Y - (sizeY/2)
+                    
                     Box.Position = Vector2.new(boxX, boxY); Box.Size = Vector2.new(sizeX, sizeY); Box.Visible = true
+                    
                     local hpPct = math.clamp(hum.Health / hum.MaxHealth, 0, 1)
                     HealthBar.Size = Vector2.new(3, sizeY * hpPct); HealthBar.Position = Vector2.new(boxX - 6, (boxY + sizeY) - (sizeY * hpPct))
                     HealthBar.Color = Color3.fromHSV(hpPct * 0.35, 1, 1); HealthBar.Visible = true
-                    Name.Position = Vector2.new(pos.X, boxY - 20); Name.Text = player.Name; Name.Visible = true; return
+                    
+                    Name.Position = Vector2.new(pos.X, boxY - 30); Name.Text = player.Name; Name.Visible = true
+                    
+                    if Config.ShowDistance and myHrp then
+                        local dist = math.floor((myHrp.Position - hrp.Position).Magnitude)
+                        DistText.Position = Vector2.new(pos.X, boxY - 15); DistText.Text = dist .. " Studs"; DistText.Visible = true
+                    else
+                        DistText.Visible = false
+                    end
+                    return
                 end
             end
-            Box.Visible = false; HealthBar.Visible = false; Name.Visible = false
+            Box.Visible = false; HealthBar.Visible = false; Name.Visible = false; DistText.Visible = false
         end)
     end
+
     for _, p in pairs(Players:GetPlayers()) do CreateDrawingESP(p) end; Players.PlayerAdded:Connect(CreateDrawingESP)
 
     local function applyHighlight(obj)
@@ -151,8 +135,7 @@ local function StartScript()
         elseif obj.Name == "SupplyCrate" or obj.Name == "C1" then
             local hl = obj:FindFirstChild("CrateHL") or Instance.new("Highlight")
             hl.Name = "CrateHL"; hl.FillTransparency = 0.5; hl.OutlineTransparency = 0; hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop; hl.Parent = obj
-            if obj.Name == "SupplyCrate" then
-                hl.FillColor = Color3.fromRGB(255, 255, 0)
+            if obj.Name == "SupplyCrate" then hl.FillColor = Color3.fromRGB(255, 255, 0)
             elseif obj.Name == "C1" then
                 local isTargetMesh = false
                 for _, child in pairs(obj:GetDescendants()) do
@@ -182,13 +165,13 @@ local function StartScript()
         for _, v in pairs(workspace:GetDescendants()) do if v.Name == "SupplyCrate" or v.Name == "C1" then applyHighlight(v) end end
     end, false)
     createBtn("🎯 TARGET: HEAD", LeftSide, 7, function(b) Config.AimPart = (Config.AimPart == "Head") and "HumanoidRootPart" or "Head"; b.Text = "🎯 TARGET: " .. (Config.AimPart == "Head" and "HEAD" or "TORSO") end)
-    
-    -- Исправленная кнопка
     createBtn("🔑 LOCKPICK: [OFF]", LeftSide, 8, function(b) 
-        Config.AutoLockpick = not Config.AutoLockpick; 
-        b.Text = "🔑 LOCKPICK: [" .. (Config.AutoLockpick and "ON" or "OFF") .. "]"; 
-        updateBtnVisual(b, Config.AutoLockpick)
-        if Config.AutoLockpick then print("AutoLockpick............ loaded") end
+        Config.AutoLockpick = not Config.AutoLockpick; b.Text = "🔑 LOCKPICK: [" .. (Config.AutoLockpick and "ON" or "OFF") .. "]"; updateBtnVisual(b, Config.AutoLockpick)
+    end, false)
+    createBtn("📏 DISTANCE: [OFF]", LeftSide, 9, function(b) 
+        Config.ShowDistance = not Config.ShowDistance
+        b.Text = "📏 DISTANCE: [" .. (Config.ShowDistance and "ON" or "OFF") .. "]"
+        updateBtnVisual(b, Config.ShowDistance) 
     end, false)
 
     local function createSlider(name, parent, order, min, max, default)
@@ -219,6 +202,7 @@ local function StartScript()
     RunService.RenderStepped:Connect(function()
         if Config.FullBright then Lighting.Brightness = 2; Lighting.ClockTime = 14; Lighting.Ambient = Color3.new(1,1,1); Lighting.GlobalShadows = false end
         Camera.FieldOfView = Config.CameraFOV
+        
         local sliders = {aimFovS, smoothS, camFovS, predS}
         for _, sl in pairs(sliders) do
             if sl.getS() then
@@ -229,7 +213,9 @@ local function StartScript()
                 sl.label.Text = sl.name .. ": " .. math.floor(val)
             end
         end
+        
         FOVCircle.Radius = Config.AimFOV; FOVCircle.Position = Vector2.new(Mouse.X, Mouse.Y + GuiService:GetGuiInset().Y); FOVCircle.Visible = Config.Aimlock 
+        
         if Config.Aimlock and UIS:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
             if not LockedTarget then
                 local dist = Config.AimFOV
@@ -252,6 +238,21 @@ local function StartScript()
                 Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, predPos), Config.Smoothness)
             else LockedTarget = nil end
         else LockedTarget = nil end
+        
+        if Config.AutoLockpick then
+            local lpgui = PlayerGui:FindFirstChild('LockpickGUI')
+            if lpgui and lpgui:FindFirstChild("MF") then
+                local f = lpgui.MF:FindFirstChild("LP_Frame") and lpgui.MF.LP_Frame:FindFirstChild("Frames")
+                if f then
+                    for _, bName in pairs({"B1", "B2", "B3"}) do
+                        local bar = f:FindFirstChild(bName) and f[bName].Bar.Selection
+                        if bar and bar.AbsolutePosition.Y >= 450 and bar.AbsolutePosition.Y <= 550 then
+                            if mouse1click then mouse1click(); task.wait(0.05); mouse1release() end
+                        end
+                    end
+                end
+            end
+        end
     end)
 
     workspace.DescendantAdded:Connect(function(d) task.defer(function() applyHighlight(d) end) end)
