@@ -8,15 +8,29 @@ local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 local Mouse = LocalPlayer:GetMouse()
 local Camera = workspace.CurrentCamera
 
-local CORRECT_KEY = "EncryptionIsComingSoon"
+local ENCRYPTED_KEY = "S3V0YWtUZWFtSXNDb29s"
 local DISCORD_LINK = "https://discord.gg/6R5V8QKYRG"
+
+local function Decode(data)
+    local b = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+    data = string.gsub(data, '[^'..b..'=]', '')
+    return (data:gsub('.', function(x)
+        if (x == '=') then return '' end
+        local r, f = '', (b:find(x) - 1)
+        for i = 6, 1, -1 do r = r .. (f % 2^i - f % 2^(i - 1) > 0 and '1' or '0') end
+        return r;
+    end):gsub('%d%d%d%d%d%d%d%d', function(x)
+        local c = 0
+        for i = 1, 8 do c = c + (x:sub(i, i) == '1' and 2^(8 - i) or 0) end
+        return string.char(c)
+    end))
+end
 
 if PlayerGui:FindFirstChild("KutakWare_Final") then PlayerGui:FindFirstChild("KutakWare_Final"):Destroy() end
 
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "KutakWare_Final"; ScreenGui.ResetOnSpawn = false; ScreenGui.Parent = PlayerGui
 
--- Login Window
 local KeyFrame = Instance.new("Frame", ScreenGui)
 KeyFrame.Size = UDim2.new(0, 350, 0, 220); KeyFrame.Position = UDim2.new(0.5, -175, 0.4, 0)
 KeyFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20); Instance.new("UICorner", KeyFrame)
@@ -40,10 +54,10 @@ local function StartScript()
     local Config = {
         ESP = false, Aimlock = false, FullBright = false, WallCheck = true,
         AimPart = "Head", Smoothness = 0.15, AimFOV = 150, CameraFOV = 70,
-        Prediction = 0.165, StickyAim = true -- По умолчанию включено
+        Prediction = 0.165, AutoLockpick = false 
     }
     
-    local LockedTarget = nil -- Сюда записывается текущая цель (Sticky Aim)
+    local LockedTarget = nil
     local OrigLight = {B = Lighting.Brightness, C = Lighting.ClockTime, A = Lighting.Ambient, S = Lighting.GlobalShadows}
     
     local MainFrame = Instance.new("Frame", ScreenGui)
@@ -72,23 +86,24 @@ local function StartScript()
     createBtn("🧊 2D ESP: [OFF]", LeftSide, 1, function(b) 
         Config.ESP = not Config.ESP; b.Text = "🧊 2D ESP: [" .. (Config.ESP and "ON" or "OFF") .. "]"; updateBtnVisual(b, Config.ESP) 
     end, false)
-    
     createBtn("🎯 AIMLOCK: [OFF]", LeftSide, 2, function(b) 
         Config.Aimlock = not Config.Aimlock; b.Text = "🎯 AIMLOCK: [" .. (Config.Aimlock and "ON" or "OFF") .. "]"; updateBtnVisual(b, Config.Aimlock) 
     end, false)
-
     createBtn("🧱 WALL CHECK: [ON]", LeftSide, 3, function(b) 
         Config.WallCheck = not Config.WallCheck; b.Text = "🧱 WALL CHECK: [" .. (Config.WallCheck and "ON" or "OFF") .. "]"; updateBtnVisual(b, Config.WallCheck) 
     end, true)
-
     createBtn("☀️ BRIGHT: [OFF]", LeftSide, 4, function(b) 
         Config.FullBright = not Config.FullBright; b.Text = "☀️ BRIGHT: [" .. (Config.FullBright and "ON" or "OFF") .. "]"; updateBtnVisual(b, Config.FullBright)
         if not Config.FullBright then Lighting.Brightness = OrigLight.B; Lighting.ClockTime = OrigLight.C; Lighting.Ambient = OrigLight.A; Lighting.GlobalShadows = OrigLight.S end
     end, false)
-
     createBtn("🎯 TARGET: HEAD", LeftSide, 5, function(b) 
         Config.AimPart = (Config.AimPart == "Head") and "HumanoidRootPart" or "Head"; b.Text = "🎯 TARGET: " .. (Config.AimPart == "Head" and "HEAD" or "TORSO") 
     end)
+    
+    createBtn("🔑 LOCKPICK: [OFF]", LeftSide, 6, function(b) 
+        Config.AutoLockpick = not Config.AutoLockpick; b.Text = "🔑 LOCKPICK: [" .. (Config.AutoLockpick and "ON" or "OFF") .. "]"; updateBtnVisual(b, Config.AutoLockpick)
+        if Config.AutoLockpick then print("AutoLockpick............ loaded") end
+    end, false)
 
     local function createSlider(name, parent, order)
         local f = Instance.new("Frame", parent); f.Size = UDim2.new(1, 0, 0, 70); f.Position = UDim2.new(0, 0, 0, (order-1)*78); f.BackgroundColor3 = Color3.fromRGB(25, 25, 25); Instance.new("UICorner", f)
@@ -106,7 +121,32 @@ local function StartScript()
     local camFovS = createSlider("⚙️ CAM FOV", RightSide, 3)
     local predS = createSlider("🔮 PREDICTION", RightSide, 4)
 
-    -- ESP Logic (Drawing)
+    local function checkLockpick(...)
+        local frames = { ... };
+        for i,v in pairs(frames) do
+            if v and v.Parent and v.Parent:FindFirstChild("UIScale") then
+                v.Parent.UIScale.Scale = 10
+                if (v.AbsolutePosition.Y >= 450 and v.AbsolutePosition.Y <= 550) then
+                    mouse1click(); task.wait(0.1); mouse1release();
+                end
+            end
+        end
+    end
+
+    task.spawn(function()
+        while true do task.wait()
+            if Config.AutoLockpick then
+                local lpgui = PlayerGui:FindFirstChild('LockpickGUI');
+                if (lpgui) then
+                    local B1 = lpgui.MF.LP_Frame.Frames.B1.Bar.Selection;
+                    local B2 = lpgui.MF.LP_Frame.Frames.B2.Bar.Selection;
+                    local B3 = lpgui.MF.LP_Frame.Frames.B3.Bar.Selection;
+                    checkLockpick(B1, B2, B3);
+                end
+            end
+        end
+    end)
+
     local ESP_Objects = {}
     local function CreateDrawingESP(player)
         if player == LocalPlayer then return end
@@ -147,7 +187,6 @@ local function StartScript()
     RunService.RenderStepped:Connect(function()
         if Config.FullBright then Lighting.Brightness = 2; Lighting.ClockTime = 14; Lighting.Ambient = Color3.new(1,1,1); Lighting.GlobalShadows = false end
         
-        -- Slider Logic
         if aimFovS.getSliding() then
             local x = math.clamp((Mouse.X - aimFovS.bar.AbsolutePosition.X) / aimFovS.bar.AbsoluteSize.X, 0, 1)
             aimFovS.dot.Position = UDim2.new(x, -7, 0.5, -7); Config.AimFOV = math.floor(x * 500) + 50; aimFovS.label.Text = "⚙️ AIM FOV: " .. Config.AimFOV
@@ -165,23 +204,16 @@ local function StartScript()
         FOVCircle.Radius = Config.AimFOV; FOVCircle.Position = Vector2.new(Mouse.X, Mouse.Y + GuiService:GetGuiInset().Y); FOVCircle.Visible = Config.Aimlock 
 
         if Config.Aimlock and UIS:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
-            -- Проверка текущей цели (Sticky)
             if LockedTarget then
                 local hum = LockedTarget.Parent:FindFirstChildOfClass("Humanoid")
-                local root = LockedTarget.Parent:FindFirstChild("HumanoidRootPart")
-                if not (hum and hum.Health > 0 and root and IsVisible(LockedTarget)) then
-                    LockedTarget = nil -- Сброс, если цель умерла или зашла за стену
-                end
+                if not (hum and hum.Health > 0 and IsVisible(LockedTarget)) then LockedTarget = nil end
             end
-
-            -- Если цели нет, ищем ближайшую
             if not LockedTarget then
                 local target, dist = nil, Config.AimFOV
                 for _, v in pairs(Players:GetPlayers()) do
                     if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild(Config.AimPart) then
                         local hum = v.Character:FindFirstChildOfClass("Humanoid")
-                        local root = v.Character:FindFirstChild("HumanoidRootPart")
-                        if hum and hum.Health > 0 and root then
+                        if hum and hum.Health > 0 then
                             local part = v.Character[Config.AimPart]
                             local pos, onS = Camera:WorldToViewportPoint(part.Position)
                             if onS and IsVisible(part) then
@@ -193,16 +225,11 @@ local function StartScript()
                 end
                 LockedTarget = target
             end
-            
-            -- Наведение на LockedTarget
             if LockedTarget then
                 local predictedPosition = LockedTarget.Position + (LockedTarget.Velocity * Config.Prediction)
                 Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, predictedPosition), Config.Smoothness)
             end
-        else
-            -- Сброс цели, когда отпускаешь кнопку
-            LockedTarget = nil
-        end
+        else LockedTarget = nil end
     end)
 
     local dragT, dragS, startP
@@ -213,6 +240,11 @@ local function StartScript()
 end
 
 CheckBtn.MouseButton1Click:Connect(function()
-    if KeyInput.Text == CORRECT_KEY then StartScript() else CheckBtn.Text = "Invalid Key"; task.wait(1); CheckBtn.Text = "Login" end
+    
+    if KeyInput.Text == Decode(ENCRYPTED_KEY) then 
+        StartScript() 
+    else 
+        CheckBtn.Text = "Invalid Key"; task.wait(1); CheckBtn.Text = "Login" 
+    end
 end)
 GetBtn.MouseButton1Click:Connect(function() if setclipboard then setclipboard(DISCORD_LINK) end; GetBtn.Text = "Copied"; task.wait(1); GetBtn.Text = "Discord" end)
