@@ -27,135 +27,104 @@ local function Decode(data)
 end
 
 if PlayerGui:FindFirstChild("KutakWare_Final") then PlayerGui:FindFirstChild("KutakWare_Final"):Destroy() end
-
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "KutakWare_Final"; ScreenGui.ResetOnSpawn = false; ScreenGui.Parent = PlayerGui
 
 local KeyFrame = Instance.new("Frame", ScreenGui)
-KeyFrame.Size = UDim2.new(0, 350, 0, 220); KeyFrame.Position = UDim2.new(0.5, -175, 0.4, 0)
+KeyFrame.Size = UDim2.new(0, 400, 0, 250); KeyFrame.Position = UDim2.new(0.5, -200, 0.4, 0)
 KeyFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20); Instance.new("UICorner", KeyFrame)
-
 local KeyTitle = Instance.new("TextLabel", KeyFrame)
-KeyTitle.Size = UDim2.new(1, 0, 0, 50); KeyTitle.Text = "🔑 KUTAK WARE | LOGIN"; KeyTitle.TextColor3 = Color3.new(1,1,1); KeyTitle.BackgroundTransparency = 1; KeyTitle.Font = Enum.Font.RobotoMono; KeyTitle.TextSize = 18
-
+KeyTitle.Size = UDim2.new(1, 0, 0, 60); KeyTitle.Text = "🔑 KUTAK WARE | LOGIN"; KeyTitle.TextColor3 = Color3.new(1,1,1); KeyTitle.BackgroundTransparency = 1; KeyTitle.Font = Enum.Font.RobotoMono; KeyTitle.TextSize = 22
 local KeyInput = Instance.new("TextBox", KeyFrame)
-KeyInput.Size = UDim2.new(0.8, 0, 0, 45); KeyInput.Position = UDim2.new(0.1, 0, 0.35, 0); KeyInput.PlaceholderText = "Enter Key..."; KeyInput.Text = ""; KeyInput.TextSize = 18; KeyInput.Font = Enum.Font.RobotoMono
+KeyInput.Size = UDim2.new(0.85, 0, 0, 50); KeyInput.Position = UDim2.new(0.075, 0, 0.35, 0); KeyInput.PlaceholderText = "Enter Key..."; KeyInput.Text = ""; KeyInput.TextSize = 20; KeyInput.Font = Enum.Font.RobotoMono
 KeyInput.BackgroundColor3 = Color3.fromRGB(35, 35, 35); KeyInput.TextColor3 = Color3.new(1,1,1); Instance.new("UICorner", KeyInput)
-
 local CheckBtn = Instance.new("TextButton", KeyFrame)
-CheckBtn.Size = UDim2.new(0.38, 0, 0, 45); CheckBtn.Position = UDim2.new(0.1, 0, 0.65, 0); CheckBtn.Text = "Login"; CheckBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 0); CheckBtn.TextColor3 = Color3.new(1,1,1); CheckBtn.TextSize = 18; CheckBtn.Font = Enum.Font.RobotoMono; Instance.new("UICorner", CheckBtn)
-
+CheckBtn.Size = UDim2.new(0.4, 0, 0, 50); CheckBtn.Position = UDim2.new(0.075, 0, 0.65, 0); CheckBtn.Text = "Login"; CheckBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 0); CheckBtn.TextColor3 = Color3.new(1,1,1); CheckBtn.TextSize = 20; CheckBtn.Font = Enum.Font.RobotoMono; Instance.new("UICorner", CheckBtn)
 local GetBtn = Instance.new("TextButton", KeyFrame)
-GetBtn.Size = UDim2.new(0.38, 0, 0, 45); GetBtn.Position = UDim2.new(0.52, 0, 0.65, 0); GetBtn.Text = "Discord"; GetBtn.BackgroundColor3 = Color3.fromRGB(88, 101, 242); GetBtn.TextColor3 = Color3.new(1,1,1); GetBtn.TextSize = 18; GetBtn.Font = Enum.Font.RobotoMono; Instance.new("UICorner", GetBtn)
+GetBtn.Size = UDim2.new(0.4, 0, 0, 50); GetBtn.Position = UDim2.new(0.525, 0, 0.65, 0); GetBtn.Text = "Discord"; GetBtn.BackgroundColor3 = Color3.fromRGB(88, 101, 242); GetBtn.TextColor3 = Color3.new(1,1,1); GetBtn.TextSize = 20; GetBtn.Font = Enum.Font.RobotoMono; Instance.new("UICorner", GetBtn)
 
 local function StartScript()
     KeyFrame:Destroy()
-    
     local Config = {
         ESP = false, Aimlock = false, FullBright = false, WallCheck = true,
         AimPart = "Head", Smoothness = 0.15, AimFOV = 150, CameraFOV = 70,
-        Prediction = 0.165, AutoLockpick = false 
+        Prediction = 0.165, AutoLockpick = false, 
+        ESPScrap = false, ESPCrates = false
     }
     
     local LockedTarget = nil
     local OrigLight = {B = Lighting.Brightness, C = Lighting.ClockTime, A = Lighting.Ambient, S = Lighting.GlobalShadows}
     
     local MainFrame = Instance.new("Frame", ScreenGui)
-    MainFrame.Size = UDim2.new(0, 500, 0, 520); MainFrame.Position = UDim2.new(0.5, -250, 0.2, 0)
+    MainFrame.Size = UDim2.new(0, 550, 0, 600); MainFrame.Position = UDim2.new(0.5, -275, 0.2, 0)
     MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15); Instance.new("UICorner", MainFrame)
 
     local Header = Instance.new("Frame", MainFrame)
-    Header.Size = UDim2.new(1, 0, 0, 60); Header.BackgroundColor3 = Color3.fromRGB(25, 25, 25); Instance.new("UICorner", Header)
+    Header.Size = UDim2.new(1, 0, 0, 65); Header.BackgroundColor3 = Color3.fromRGB(25, 25, 25); Instance.new("UICorner", Header)
     local Title = Instance.new("TextLabel", Header)
-    Title.Size = UDim2.new(1, 0, 1, 0); Title.BackgroundTransparency = 1; Title.Text = "🛡️ KUTAK WARE | ACTIVE"; Title.TextColor3 = Color3.new(1,1,1); Title.Font = Enum.Font.RobotoMono; Title.TextSize = 18
+    Title.Size = UDim2.new(1, 0, 1, 0); Title.BackgroundTransparency = 1; Title.Text = "🛡️ KutakWare V3"; Title.TextColor3 = Color3.new(1,1,1); Title.Font = Enum.Font.RobotoMono; Title.TextSize = 22
 
-    local LeftSide = Instance.new("Frame", MainFrame); LeftSide.Size = UDim2.new(0.5, -15, 1, -80); LeftSide.Position = UDim2.new(0, 10, 0, 70); LeftSide.BackgroundTransparency = 1
-    local RightSide = Instance.new("Frame", MainFrame); RightSide.Size = UDim2.new(0.5, -15, 1, -80); RightSide.Position = UDim2.new(0.5, 5, 0, 70); RightSide.BackgroundTransparency = 1
+    local LeftSide = Instance.new("Frame", MainFrame); LeftSide.Size = UDim2.new(0.5, -15, 1, -85); LeftSide.Position = UDim2.new(0, 10, 0, 75); LeftSide.BackgroundTransparency = 1
+    local RightSide = Instance.new("Frame", MainFrame); RightSide.Size = UDim2.new(0.5, -15, 1, -85); RightSide.Position = UDim2.new(0.5, 5, 0, 75); RightSide.BackgroundTransparency = 1
 
     local function updateBtnVisual(btn, state)
         btn.BackgroundColor3 = state and Color3.fromRGB(40, 120, 40) or Color3.fromRGB(30, 30, 30)
     end
 
     local function createBtn(text, parent, order, cb, defaultState)
-        local btn = Instance.new("TextButton", parent); btn.Size = UDim2.new(1, 0, 0, 40); btn.Position = UDim2.new(0, 0, 0, (order-1)*46); btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+        local btn = Instance.new("TextButton", parent); btn.Size = UDim2.new(1, 0, 0, 45); btn.Position = UDim2.new(0, 0, 0, (order-1)*50); btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
         btn.Text = text; btn.TextColor3 = Color3.new(1,1,1); btn.Font = Enum.Font.RobotoMono; btn.TextSize = 14; Instance.new("UICorner", btn)
         if defaultState ~= nil then updateBtnVisual(btn, defaultState) end
         btn.MouseButton1Click:Connect(function() cb(btn) end) return btn
     end
 
-    createBtn("🧊 2D ESP: [OFF]", LeftSide, 1, function(b) 
-        Config.ESP = not Config.ESP; b.Text = "🧊 2D ESP: [" .. (Config.ESP and "ON" or "OFF") .. "]"; updateBtnVisual(b, Config.ESP) 
-    end, false)
-    createBtn("🎯 AIMLOCK: [OFF]", LeftSide, 2, function(b) 
-        Config.Aimlock = not Config.Aimlock; b.Text = "🎯 AIMLOCK: [" .. (Config.Aimlock and "ON" or "OFF") .. "]"; updateBtnVisual(b, Config.Aimlock) 
-    end, false)
-    createBtn("🧱 WALL CHECK: [ON]", LeftSide, 3, function(b) 
-        Config.WallCheck = not Config.WallCheck; b.Text = "🧱 WALL CHECK: [" .. (Config.WallCheck and "ON" or "OFF") .. "]"; updateBtnVisual(b, Config.WallCheck) 
-    end, true)
-    createBtn("☀️ BRIGHT: [OFF]", LeftSide, 4, function(b) 
-        Config.FullBright = not Config.FullBright; b.Text = "☀️ BRIGHT: [" .. (Config.FullBright and "ON" or "OFF") .. "]"; updateBtnVisual(b, Config.FullBright)
-        if not Config.FullBright then Lighting.Brightness = OrigLight.B; Lighting.ClockTime = OrigLight.C; Lighting.Ambient = OrigLight.A; Lighting.GlobalShadows = OrigLight.S end
-    end, false)
-    createBtn("🎯 TARGET: HEAD", LeftSide, 5, function(b) 
-        Config.AimPart = (Config.AimPart == "Head") and "HumanoidRootPart" or "Head"; b.Text = "🎯 TARGET: " .. (Config.AimPart == "Head" and "HEAD" or "TORSO") 
-    end)
-    
-    createBtn("🔑 LOCKPICK: [OFF]", LeftSide, 6, function(b) 
-        Config.AutoLockpick = not Config.AutoLockpick; b.Text = "🔑 LOCKPICK: [" .. (Config.AutoLockpick and "ON" or "OFF") .. "]"; updateBtnVisual(b, Config.AutoLockpick)
-        if Config.AutoLockpick then print("AutoLockpick............ loaded") end
-    end, false)
-
-    local function createSlider(name, parent, order)
-        local f = Instance.new("Frame", parent); f.Size = UDim2.new(1, 0, 0, 70); f.Position = UDim2.new(0, 0, 0, (order-1)*78); f.BackgroundColor3 = Color3.fromRGB(25, 25, 25); Instance.new("UICorner", f)
-        local l = Instance.new("TextLabel", f); l.Size = UDim2.new(1, 0, 0, 35); l.BackgroundTransparency = 1; l.Text = name; l.TextColor3 = Color3.new(1,1,1); l.Font = Enum.Font.RobotoMono; l.TextSize = 13
-        local b = Instance.new("Frame", f); b.Size = UDim2.new(0.85, 0, 0, 5); b.Position = UDim2.new(0.075, 0, 0.75, 0); b.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-        local d = Instance.new("Frame", b); d.Size = UDim2.new(0, 14, 0, 14); d.Position = UDim2.new(0.3, -7, 0.5, -7); d.BackgroundColor3 = Color3.new(1,1,1); Instance.new("UICorner", d).CornerRadius = UDim.new(1,0)
-        local s = false
-        f.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then s = true end end)
-        UIS.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then s = false end end)
-        return {bar = b, dot = d, label = l, getSliding = function() return s end}
-    end
-
-    local aimFovS = createSlider("⚙️ AIM FOV", RightSide, 1)
-    local smoothS = createSlider("⚙️ SMOOTHNESS", RightSide, 2)
-    local camFovS = createSlider("⚙️ CAM FOV", RightSide, 3)
-    local predS = createSlider("🔮 PREDICTION", RightSide, 4)
-
+    -- [ФУНКЦИЯ ВЗЛОМА]
     local function checkLockpick(...)
         local frames = { ... };
         for i,v in pairs(frames) do
             if v and v.Parent and v.Parent:FindFirstChild("UIScale") then
                 v.Parent.UIScale.Scale = 10
-                if (v.AbsolutePosition.Y >= 450 and v.AbsolutePosition.Y <= 550) then
+            end
+            if (v and v.AbsolutePosition.Y >= 450 and v.AbsolutePosition.Y <= 550) then
+                if mouse1click then
                     mouse1click(); task.wait(0.1); mouse1release();
                 end
             end
         end
     end
 
+    -- [ЦИКЛ ВЗЛОМА]
     task.spawn(function()
         while true do task.wait()
             if Config.AutoLockpick then
                 local lpgui = PlayerGui:FindFirstChild('LockpickGUI');
-                if (lpgui) then
-                    local B1 = lpgui.MF.LP_Frame.Frames.B1.Bar.Selection;
-                    local B2 = lpgui.MF.LP_Frame.Frames.B2.Bar.Selection;
-                    local B3 = lpgui.MF.LP_Frame.Frames.B3.Bar.Selection;
-                    checkLockpick(B1, B2, B3);
+                if lpgui and lpgui:FindFirstChild("MF") then
+                    local mf = lpgui.MF
+                    local lpFrame = mf:FindFirstChild("LP_Frame")
+                    if lpFrame and lpFrame:FindFirstChild("Frames") then
+                        local f = lpFrame.Frames
+                        local b1 = f:FindFirstChild("B1") and f.B1.Bar.Selection
+                        local b2 = f:FindFirstChild("B2") and f.B2.Bar.Selection
+                        local b3 = f:FindFirstChild("B3") and f.B3.Bar.Selection
+                        
+                        if b1 and b2 and b3 then
+                            checkLockpick(b1, b2, b3)
+                        end
+                    end
                 end
             end
         end
     end)
 
-    local ESP_Objects = {}
     local function CreateDrawingESP(player)
         if player == LocalPlayer then return end
         local Box = Drawing.new("Square"); Box.Thickness = 1; Box.Color = Color3.new(1, 1, 1); Box.Visible = false
         local HealthBar = Drawing.new("Square"); HealthBar.Thickness = 1; HealthBar.Filled = true; HealthBar.Visible = false
-        local Name = Drawing.new("Text"); Name.Size = 14; Name.Center = true; Name.Outline = true; Name.Color = Color3.new(1,1,1); Name.Visible = false
-        ESP_Objects[player] = {Box = Box, HealthBar = HealthBar, Name = Name}
+        local Name = Drawing.new("Text"); Name.Size = 16; Name.Center = true; Name.Outline = true; Name.Color = Color3.new(1,1,1); Name.Visible = false
         
-        RunService.RenderStepped:Connect(function()
+        local connection
+        connection = RunService.RenderStepped:Connect(function()
+            if not player.Parent then Box:Remove(); HealthBar:Remove(); Name:Remove(); connection:Disconnect(); return end
             local char = player.Character; local hum = char and char:FindFirstChildOfClass("Humanoid"); local hrp = char and char:FindFirstChild("HumanoidRootPart")
             if Config.ESP and char and hum and hrp and hum.Health > 0 then
                 local pos, onS = Camera:WorldToViewportPoint(hrp.Position)
@@ -164,10 +133,9 @@ local function StartScript()
                     local sizeX = sizeY / 2; local boxX, boxY = pos.X - (sizeX/2), pos.Y - (sizeY/2)
                     Box.Position = Vector2.new(boxX, boxY); Box.Size = Vector2.new(sizeX, sizeY); Box.Visible = true
                     local hpPct = math.clamp(hum.Health / hum.MaxHealth, 0, 1)
-                    HealthBar.Size = Vector2.new(3, sizeY * hpPct)
-                    HealthBar.Position = Vector2.new(boxX - 6, (boxY + sizeY) - (sizeY * hpPct))
+                    HealthBar.Size = Vector2.new(3, sizeY * hpPct); HealthBar.Position = Vector2.new(boxX - 6, (boxY + sizeY) - (sizeY * hpPct))
                     HealthBar.Color = Color3.fromHSV(hpPct * 0.35, 1, 1); HealthBar.Visible = true
-                    Name.Position = Vector2.new(pos.X, boxY - 18); Name.Text = player.Name; Name.Visible = true; return
+                    Name.Position = Vector2.new(pos.X, boxY - 20); Name.Text = player.Name; Name.Visible = true; return
                 end
             end
             Box.Visible = false; HealthBar.Visible = false; Name.Visible = false
@@ -175,41 +143,96 @@ local function StartScript()
     end
     for _, p in pairs(Players:GetPlayers()) do CreateDrawingESP(p) end; Players.PlayerAdded:Connect(CreateDrawingESP)
 
-    local FOVCircle = Drawing.new("Circle"); FOVCircle.Thickness = 1; FOVCircle.Color = Color3.new(1,1,1); FOVCircle.Visible = false
+    local function applyHighlight(obj)
+        if not (obj:IsA("BasePart") or obj:IsA("Model")) then return end
+        if obj.Name == "S1" or obj.Name == "S2" then
+            local hl = obj:FindFirstChild("ScrapHL") or Instance.new("Highlight")
+            hl.Name = "ScrapHL"; hl.FillColor = Color3.fromRGB(255, 0, 0); hl.Parent = obj; hl.Enabled = Config.ESPScrap
+        elseif obj.Name == "SupplyCrate" or obj.Name == "C1" then
+            local hl = obj:FindFirstChild("CrateHL") or Instance.new("Highlight")
+            hl.Name = "CrateHL"; hl.FillTransparency = 0.5; hl.OutlineTransparency = 0; hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop; hl.Parent = obj
+            if obj.Name == "SupplyCrate" then
+                hl.FillColor = Color3.fromRGB(255, 255, 0)
+            elseif obj.Name == "C1" then
+                local isTargetMesh = false
+                for _, child in pairs(obj:GetDescendants()) do
+                    if child:IsA("MeshPart") and (child.TextureID == "rbxassetid://11157915894" or child.TextureID == "http://www.roblox.com/asset/?id=11157915894") then
+                        isTargetMesh = true; break
+                    end
+                end
+                hl.FillColor = isTargetMesh and Color3.fromRGB(255, 0, 0) or Color3.fromRGB(0, 255, 0)
+            end
+            hl.Enabled = Config.ESPCrates
+        end
+    end
+
+    createBtn("🧊 2D ESP: [OFF]", LeftSide, 1, function(b) Config.ESP = not Config.ESP; b.Text = "🧊 2D ESP: [" .. (Config.ESP and "ON" or "OFF") .. "]"; updateBtnVisual(b, Config.ESP) end, false)
+    createBtn("🎯 AIMLOCK: [OFF]", LeftSide, 2, function(b) Config.Aimlock = not Config.Aimlock; b.Text = "🎯 AIMLOCK: [" .. (Config.Aimlock and "ON" or "OFF") .. "]"; updateBtnVisual(b, Config.Aimlock) end, false)
+    createBtn("🧱 WALL CHECK: [ON]", LeftSide, 3, function(b) Config.WallCheck = not Config.WallCheck; b.Text = "🧱 WALL CHECK: [" .. (Config.WallCheck and "ON" or "OFF") .. "]"; updateBtnVisual(b, Config.WallCheck) end, true)
+    createBtn("☀️ BRIGHT: [OFF]", LeftSide, 4, function(b) 
+        Config.FullBright = not Config.FullBright; b.Text = "☀️ BRIGHT: [" .. (Config.FullBright and "ON" or "OFF") .. "]"; updateBtnVisual(b, Config.FullBright)
+        if not Config.FullBright then Lighting.Brightness = OrigLight.B; Lighting.ClockTime = OrigLight.C; Lighting.Ambient = OrigLight.A; Lighting.GlobalShadows = OrigLight.S end
+    end, false)
+    createBtn("📦 SCRAP ESP: [OFF]", LeftSide, 5, function(b) 
+        Config.ESPScrap = not Config.ESPScrap; b.Text = "📦 SCRAP ESP: [" .. (Config.ESPScrap and "ON" or "OFF") .. "]"; updateBtnVisual(b, Config.ESPScrap)
+        for _, v in pairs(workspace:GetDescendants()) do if v.Name == "S1" or v.Name == "S2" then applyHighlight(v) end end
+    end, false)
+    createBtn("🎁 CRATE ESP: [OFF]", LeftSide, 6, function(b) 
+        Config.ESPCrates = not Config.ESPCrates; b.Text = "🎁 CRATE ESP: [" .. (Config.ESPCrates and "ON" or "OFF") .. "]"; updateBtnVisual(b, Config.ESPCrates)
+        for _, v in pairs(workspace:GetDescendants()) do if v.Name == "SupplyCrate" or v.Name == "C1" then applyHighlight(v) end end
+    end, false)
+    createBtn("🎯 TARGET: HEAD", LeftSide, 7, function(b) Config.AimPart = (Config.AimPart == "Head") and "HumanoidRootPart" or "Head"; b.Text = "🎯 TARGET: " .. (Config.AimPart == "Head" and "HEAD" or "TORSO") end)
     
-    local function IsVisible(targetPart)
+    -- Исправленная кнопка
+    createBtn("🔑 LOCKPICK: [OFF]", LeftSide, 8, function(b) 
+        Config.AutoLockpick = not Config.AutoLockpick; 
+        b.Text = "🔑 LOCKPICK: [" .. (Config.AutoLockpick and "ON" or "OFF") .. "]"; 
+        updateBtnVisual(b, Config.AutoLockpick)
+        if Config.AutoLockpick then print("AutoLockpick............ loaded") end
+    end, false)
+
+    local function createSlider(name, parent, order, min, max, default)
+        local f = Instance.new("Frame", parent); f.Size = UDim2.new(1, 0, 0, 80); f.Position = UDim2.new(0, 0, 0, (order-1)*85); f.BackgroundColor3 = Color3.fromRGB(25, 25, 25); Instance.new("UICorner", f)
+        local l = Instance.new("TextLabel", f); l.Size = UDim2.new(1, 0, 0, 40); l.BackgroundTransparency = 1; l.Text = name .. ": " .. default; l.TextColor3 = Color3.new(1,1,1); l.Font = Enum.Font.RobotoMono; l.TextSize = 15
+        local b = Instance.new("Frame", f); b.Size = UDim2.new(0.85, 0, 0, 6); b.Position = UDim2.new(0.075, 0, 0.75, 0); b.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        local d = Instance.new("Frame", b); d.Size = UDim2.new(0, 16, 0, 16); d.Position = UDim2.new(0, -8, 0.5, -8); d.BackgroundColor3 = Color3.new(1,1,1); Instance.new("UICorner", d).CornerRadius = UDim.new(1,0)
+        local s = false
+        f.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then s = true end end)
+        UIS.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then s = false end end)
+        return {bar = b, dot = d, label = l, getS = function() return s end, name = name, min = min, max = max}
+    end
+
+    local aimFovS = createSlider("⚙️ AIM FOV", RightSide, 1, 50, 550, 150)
+    local smoothS = createSlider("⚙️ SMOOTH", RightSide, 2, 5, 100, 15)
+    local camFovS = createSlider("⚙️ CAM FOV", RightSide, 3, 70, 120, 70)
+    local predS = createSlider("🔮 PRED", RightSide, 4, 0, 500, 165)
+
+    local FOVCircle = Drawing.new("Circle"); FOVCircle.Thickness = 1; FOVCircle.Color = Color3.new(1,1,1); FOVCircle.Visible = false
+
+    local function IsVisible(part)
         if not Config.WallCheck then return true end
-        local params = RaycastParams.new(); params.FilterType = Enum.RaycastFilterType.Exclude; params.FilterDescendantsInstances = {LocalPlayer.Character, targetPart.Parent}
-        local ray = workspace:Raycast(Camera.CFrame.Position, targetPart.Position - Camera.CFrame.Position, params)
-        return ray == nil
+        local p = RaycastParams.new(); p.FilterType = Enum.RaycastFilterType.Exclude; p.FilterDescendantsInstances = {LocalPlayer.Character, part.Parent}
+        local r = workspace:Raycast(Camera.CFrame.Position, part.Position - Camera.CFrame.Position, p)
+        return r == nil
     end
 
     RunService.RenderStepped:Connect(function()
         if Config.FullBright then Lighting.Brightness = 2; Lighting.ClockTime = 14; Lighting.Ambient = Color3.new(1,1,1); Lighting.GlobalShadows = false end
-        
-        if aimFovS.getSliding() then
-            local x = math.clamp((Mouse.X - aimFovS.bar.AbsolutePosition.X) / aimFovS.bar.AbsoluteSize.X, 0, 1)
-            aimFovS.dot.Position = UDim2.new(x, -7, 0.5, -7); Config.AimFOV = math.floor(x * 500) + 50; aimFovS.label.Text = "⚙️ AIM FOV: " .. Config.AimFOV
-        elseif smoothS.getSliding() then
-            local x = math.clamp((Mouse.X - smoothS.bar.AbsolutePosition.X) / smoothS.bar.AbsoluteSize.X, 0, 1)
-            smoothS.dot.Position = UDim2.new(x, -7, 0.5, -7); Config.Smoothness = (x * 0.95) + 0.05; smoothS.label.Text = "⚙️ SMOOTHNESS: " .. string.format("%.2f", Config.Smoothness)
-        elseif camFovS.getSliding() then
-            local x = math.clamp((Mouse.X - camFovS.bar.AbsolutePosition.X) / camFovS.bar.AbsoluteSize.X, 0, 1)
-            camFovS.dot.Position = UDim2.new(x, -7, 0.5, -7); Config.CameraFOV = math.floor(x * 50) + 70; camFovS.label.Text = "⚙️ CAM FOV: " .. Config.CameraFOV; Camera.FieldOfView = Config.CameraFOV
-        elseif predS.getSliding() then
-            local x = math.clamp((Mouse.X - predS.bar.AbsolutePosition.X) / predS.bar.AbsoluteSize.X, 0, 1)
-            predS.dot.Position = UDim2.new(x, -7, 0.5, -7); Config.Prediction = x * 0.5; predS.label.Text = "🔮 PREDICTION: " .. string.format("%.3f", Config.Prediction)
-        end
-
-        FOVCircle.Radius = Config.AimFOV; FOVCircle.Position = Vector2.new(Mouse.X, Mouse.Y + GuiService:GetGuiInset().Y); FOVCircle.Visible = Config.Aimlock 
-
-        if Config.Aimlock and UIS:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
-            if LockedTarget then
-                local hum = LockedTarget.Parent:FindFirstChildOfClass("Humanoid")
-                if not (hum and hum.Health > 0 and IsVisible(LockedTarget)) then LockedTarget = nil end
+        Camera.FieldOfView = Config.CameraFOV
+        local sliders = {aimFovS, smoothS, camFovS, predS}
+        for _, sl in pairs(sliders) do
+            if sl.getS() then
+                local x = math.clamp((Mouse.X - sl.bar.AbsolutePosition.X) / sl.bar.AbsoluteSize.X, 0, 1)
+                sl.dot.Position = UDim2.new(x, -8, 0.5, -8)
+                local val = sl.min + (x * (sl.max - sl.min))
+                if sl == aimFovS then Config.AimFOV = val elseif sl == smoothS then Config.Smoothness = val/100 elseif sl == camFovS then Config.CameraFOV = val elseif sl == predS then Config.Prediction = val/1000 end
+                sl.label.Text = sl.name .. ": " .. math.floor(val)
             end
+        end
+        FOVCircle.Radius = Config.AimFOV; FOVCircle.Position = Vector2.new(Mouse.X, Mouse.Y + GuiService:GetGuiInset().Y); FOVCircle.Visible = Config.Aimlock 
+        if Config.Aimlock and UIS:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
             if not LockedTarget then
-                local target, dist = nil, Config.AimFOV
+                local dist = Config.AimFOV
                 for _, v in pairs(Players:GetPlayers()) do
                     if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild(Config.AimPart) then
                         local hum = v.Character:FindFirstChildOfClass("Humanoid")
@@ -218,20 +241,20 @@ local function StartScript()
                             local pos, onS = Camera:WorldToViewportPoint(part.Position)
                             if onS and IsVisible(part) then
                                 local mDist = (Vector2.new(pos.X, pos.Y) - Vector2.new(Mouse.X, Mouse.Y)).Magnitude
-                                if mDist < dist then dist = mDist; target = part end
+                                if mDist < dist then dist = mDist; LockedTarget = part end
                             end
                         end
                     end
                 end
-                LockedTarget = target
             end
-            if LockedTarget then
-                local predictedPosition = LockedTarget.Position + (LockedTarget.Velocity * Config.Prediction)
-                Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, predictedPosition), Config.Smoothness)
-            end
+            if LockedTarget and LockedTarget.Parent then
+                local predPos = LockedTarget.Position + (LockedTarget.Velocity * Config.Prediction)
+                Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, predPos), Config.Smoothness)
+            else LockedTarget = nil end
         else LockedTarget = nil end
     end)
 
+    workspace.DescendantAdded:Connect(function(d) task.defer(function() applyHighlight(d) end) end)
     local dragT, dragS, startP
     Header.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then dragT = true; dragS = i.Position; startP = MainFrame.Position end end)
     UIS.InputChanged:Connect(function(i) if dragT and i.UserInputType == Enum.UserInputType.MouseMovement then local delta = i.Position - dragS; MainFrame.Position = UDim2.new(startP.X.Scale, startP.X.Offset + delta.X, startP.Y.Scale, startP.Y.Offset + delta.Y) end end)
@@ -239,12 +262,5 @@ local function StartScript()
     UIS.InputBegan:Connect(function(i, g) if not g and i.KeyCode == Enum.KeyCode.K then MainFrame.Visible = not MainFrame.Visible end end)
 end
 
-CheckBtn.MouseButton1Click:Connect(function()
-    
-    if KeyInput.Text == Decode(ENCRYPTED_KEY) then 
-        StartScript() 
-    else 
-        CheckBtn.Text = "Invalid Key"; task.wait(1); CheckBtn.Text = "Login" 
-    end
-end)
-GetBtn.MouseButton1Click:Connect(function() if setclipboard then setclipboard(DISCORD_LINK) end; GetBtn.Text = "Copied"; task.wait(1); GetBtn.Text = "Discord" end)
+CheckBtn.MouseButton1Click:Connect(function() if KeyInput.Text == Decode(ENCRYPTED_KEY) then StartScript() end end)
+GetBtn.MouseButton1Click:Connect(function() if setclipboard then setclipboard(DISCORD_LINK) end end)
