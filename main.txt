@@ -38,14 +38,16 @@ local function StartScript()
     KeyFrame:Destroy()
     
     local Config = {
-        ESP = false, Aimlock = false, FullBright = false, AutoLockpick = false, WallCheck = true,
-        AimPart = "Head", Smoothness = 0.15, AimFOV = 150, CameraFOV = 70
+        ESP = false, Aimlock = false, FullBright = false, WallCheck = true,
+        AimPart = "Head", Smoothness = 0.15, AimFOV = 150, CameraFOV = 70,
+        Prediction = 0.165, StickyAim = true -- По умолчанию включено
     }
     
+    local LockedTarget = nil -- Сюда записывается текущая цель (Sticky Aim)
     local OrigLight = {B = Lighting.Brightness, C = Lighting.ClockTime, A = Lighting.Ambient, S = Lighting.GlobalShadows}
     
     local MainFrame = Instance.new("Frame", ScreenGui)
-    MainFrame.Size = UDim2.new(0, 500, 0, 450); MainFrame.Position = UDim2.new(0.5, -250, 0.2, 0)
+    MainFrame.Size = UDim2.new(0, 500, 0, 520); MainFrame.Position = UDim2.new(0.5, -250, 0.2, 0)
     MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15); Instance.new("UICorner", MainFrame)
 
     local Header = Instance.new("Frame", MainFrame)
@@ -102,8 +104,9 @@ local function StartScript()
     local aimFovS = createSlider("⚙️ AIM FOV", RightSide, 1)
     local smoothS = createSlider("⚙️ SMOOTHNESS", RightSide, 2)
     local camFovS = createSlider("⚙️ CAM FOV", RightSide, 3)
+    local predS = createSlider("🔮 PREDICTION", RightSide, 4)
 
-    -- ESP Logic (Bottom-up Health bar)
+    -- ESP Logic (Drawing)
     local ESP_Objects = {}
     local function CreateDrawingESP(player)
         if player == LocalPlayer then return end
@@ -120,12 +123,10 @@ local function StartScript()
                     local sizeY = (Camera:WorldToViewportPoint(hrp.Position + Vector3.new(0, 3, 0)).Y - Camera:WorldToViewportPoint(hrp.Position - Vector3.new(0, 3, 0)).Y)
                     local sizeX = sizeY / 2; local boxX, boxY = pos.X - (sizeX/2), pos.Y - (sizeY/2)
                     Box.Position = Vector2.new(boxX, boxY); Box.Size = Vector2.new(sizeX, sizeY); Box.Visible = true
-                    
                     local hpPct = math.clamp(hum.Health / hum.MaxHealth, 0, 1)
                     HealthBar.Size = Vector2.new(3, sizeY * hpPct)
                     HealthBar.Position = Vector2.new(boxX - 6, (boxY + sizeY) - (sizeY * hpPct))
                     HealthBar.Color = Color3.fromHSV(hpPct * 0.35, 1, 1); HealthBar.Visible = true
-                    
                     Name.Position = Vector2.new(pos.X, boxY - 18); Name.Text = player.Name; Name.Visible = true; return
                 end
             end
@@ -134,14 +135,11 @@ local function StartScript()
     end
     for _, p in pairs(Players:GetPlayers()) do CreateDrawingESP(p) end; Players.PlayerAdded:Connect(CreateDrawingESP)
 
-    -- Aimlock & Wall Check Core
     local FOVCircle = Drawing.new("Circle"); FOVCircle.Thickness = 1; FOVCircle.Color = Color3.new(1,1,1); FOVCircle.Visible = false
     
     local function IsVisible(targetPart)
         if not Config.WallCheck then return true end
-        local result = workspace:Raycast(Camera.CFrame.Position, targetPart.Position - Camera.CFrame.Position, RaycastParams.new())
-        local ignoreList = {LocalPlayer.Character, targetPart.Parent}
-        local params = RaycastParams.new(); params.FilterType = Enum.RaycastFilterType.Exclude; params.FilterDescendantsInstances = ignoreList
+        local params = RaycastParams.new(); params.FilterType = Enum.RaycastFilterType.Exclude; params.FilterDescendantsInstances = {LocalPlayer.Character, targetPart.Parent}
         local ray = workspace:Raycast(Camera.CFrame.Position, targetPart.Position - Camera.CFrame.Position, params)
         return ray == nil
     end
@@ -149,6 +147,7 @@ local function StartScript()
     RunService.RenderStepped:Connect(function()
         if Config.FullBright then Lighting.Brightness = 2; Lighting.ClockTime = 14; Lighting.Ambient = Color3.new(1,1,1); Lighting.GlobalShadows = false end
         
+        -- Slider Logic
         if aimFovS.getSliding() then
             local x = math.clamp((Mouse.X - aimFovS.bar.AbsolutePosition.X) / aimFovS.bar.AbsoluteSize.X, 0, 1)
             aimFovS.dot.Position = UDim2.new(x, -7, 0.5, -7); Config.AimFOV = math.floor(x * 500) + 50; aimFovS.label.Text = "⚙️ AIM FOV: " .. Config.AimFOV
@@ -158,27 +157,51 @@ local function StartScript()
         elseif camFovS.getSliding() then
             local x = math.clamp((Mouse.X - camFovS.bar.AbsolutePosition.X) / camFovS.bar.AbsoluteSize.X, 0, 1)
             camFovS.dot.Position = UDim2.new(x, -7, 0.5, -7); Config.CameraFOV = math.floor(x * 50) + 70; camFovS.label.Text = "⚙️ CAM FOV: " .. Config.CameraFOV; Camera.FieldOfView = Config.CameraFOV
+        elseif predS.getSliding() then
+            local x = math.clamp((Mouse.X - predS.bar.AbsolutePosition.X) / predS.bar.AbsoluteSize.X, 0, 1)
+            predS.dot.Position = UDim2.new(x, -7, 0.5, -7); Config.Prediction = x * 0.5; predS.label.Text = "🔮 PREDICTION: " .. string.format("%.3f", Config.Prediction)
         end
 
-        FOVCircle.Radius = Config.AimFOV; FOVCircle.Position = Vector2.new(Mouse.X, Mouse.Y + GuiService:GetGuiInset().Y)
-        FOVCircle.Visible = Config.Aimlock 
+        FOVCircle.Radius = Config.AimFOV; FOVCircle.Position = Vector2.new(Mouse.X, Mouse.Y + GuiService:GetGuiInset().Y); FOVCircle.Visible = Config.Aimlock 
 
         if Config.Aimlock and UIS:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
-            local target, dist = nil, Config.AimFOV
-            for _, v in pairs(Players:GetPlayers()) do
-                if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild(Config.AimPart) then
-                    local hum = v.Character:FindFirstChildOfClass("Humanoid")
-                    if hum and hum.Health > 0 then
-                        local part = v.Character[Config.AimPart]
-                        local pos, onS = Camera:WorldToViewportPoint(part.Position)
-                        if onS and IsVisible(part) then
-                            local mDist = (Vector2.new(pos.X, pos.Y) - Vector2.new(Mouse.X, Mouse.Y)).Magnitude
-                            if mDist < dist then dist = mDist; target = part end
+            -- Проверка текущей цели (Sticky)
+            if LockedTarget then
+                local hum = LockedTarget.Parent:FindFirstChildOfClass("Humanoid")
+                local root = LockedTarget.Parent:FindFirstChild("HumanoidRootPart")
+                if not (hum and hum.Health > 0 and root and IsVisible(LockedTarget)) then
+                    LockedTarget = nil -- Сброс, если цель умерла или зашла за стену
+                end
+            end
+
+            -- Если цели нет, ищем ближайшую
+            if not LockedTarget then
+                local target, dist = nil, Config.AimFOV
+                for _, v in pairs(Players:GetPlayers()) do
+                    if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild(Config.AimPart) then
+                        local hum = v.Character:FindFirstChildOfClass("Humanoid")
+                        local root = v.Character:FindFirstChild("HumanoidRootPart")
+                        if hum and hum.Health > 0 and root then
+                            local part = v.Character[Config.AimPart]
+                            local pos, onS = Camera:WorldToViewportPoint(part.Position)
+                            if onS and IsVisible(part) then
+                                local mDist = (Vector2.new(pos.X, pos.Y) - Vector2.new(Mouse.X, Mouse.Y)).Magnitude
+                                if mDist < dist then dist = mDist; target = part end
+                            end
                         end
                     end
                 end
+                LockedTarget = target
             end
-            if target then Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, target.Position), Config.Smoothness) end
+            
+            -- Наведение на LockedTarget
+            if LockedTarget then
+                local predictedPosition = LockedTarget.Position + (LockedTarget.Velocity * Config.Prediction)
+                Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, predictedPosition), Config.Smoothness)
+            end
+        else
+            -- Сброс цели, когда отпускаешь кнопку
+            LockedTarget = nil
         end
     end)
 
