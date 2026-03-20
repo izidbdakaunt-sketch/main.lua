@@ -9,7 +9,8 @@ local Mouse = LocalPlayer:GetMouse()
 local Camera = workspace.CurrentCamera
 
 local LootFolder = workspace:FindFirstChild("Filter") and workspace.Filter:FindFirstChild("SpawnedPiles")
-local ENCRYPTED_KEY = "S3V0YWtUZWFtSXNDb29s"
+-- Ключ обновлен на: DoYouLikeUI?
+local ENCRYPTED_KEY = "RG9Zb3VMaWtlVUk/" 
 local DISCORD_LINK = "https://discord.gg/6R5V8QKYRG"
 
 local function Decode(data)
