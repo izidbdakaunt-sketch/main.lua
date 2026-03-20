@@ -9,7 +9,6 @@ local Mouse = LocalPlayer:GetMouse()
 local Camera = workspace.CurrentCamera
 
 local LootFolder = workspace:FindFirstChild("Filter") and workspace.Filter:FindFirstChild("SpawnedPiles")
--- Ключ обновлен на: DoYouLikeUI?
 local ENCRYPTED_KEY = "RG9Zb3VMaWtlVUk/" 
 local DISCORD_LINK = "https://discord.gg/6R5V8QKYRG"
 
@@ -81,7 +80,7 @@ local function StartScript()
         btn.MouseButton1Click:Connect(function() cb(btn) end) return btn
     end
 
-    -- Логика Safe ESP (Надписи)
+    
     task.spawn(function()
         local SafeFolder = workspace:FindFirstChild("Map") and workspace.Map:FindFirstChild("BredMakurz")
         while true do task.wait(0.5)
