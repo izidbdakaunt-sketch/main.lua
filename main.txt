@@ -2,289 +2,446 @@ local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local Lighting = game:GetService("Lighting")
+local TweenService = game:GetService("TweenService")
 local GuiService = game:GetService("GuiService")
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 local Mouse = LocalPlayer:GetMouse()
 local Camera = workspace.CurrentCamera
 
-local LootFolder = workspace:FindFirstChild("Filter") and workspace.Filter:FindFirstChild("SpawnedPiles")
-local ENCRYPTED_KEY = "RG9Zb3VMaWtlVUk/" 
-local DISCORD_LINK = "https://discord.gg/6R5V8QKYRG"
+local function Round(parent, radius)
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, radius or 8)
+    corner.Parent = parent
+    return corner
+end
 
-local function Decode(data)
-    local b = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
-    data = string.gsub(data, '[^'..b..'=]', '')
-    return (data:gsub('.', function(x)
-        if (x == '=') then return '' end
-        local r, f = '', (b:find(x) - 1)
-        for i = 6, 1, -1 do r = r .. (f % 2^i - f % 2^(i - 1) > 0 and '1' or '0') end
+local ENCRYPTED_KEY = "RG9Zb3VMaWtlVUk/" 
+local function Decode(d)
+    local b='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+    d=string.gsub(d,'[^'..b..'=]','')
+    return (d:gsub('.',function(x)
+        if(x=='=')then return '' end
+        local r,f='', (b:find(x)-1)
+        for i=6,1,-1 do r=r..(f%2^i-f%2^(i-1)>0 and '1' or '0') end
         return r;
-    end):gsub('%d%d%d%d%d%d%d%d', function(x)
-        local c = 0
-        for i = 1, 8 do c = c + (x:sub(i, i) == '1' and 2^(8 - i) or 0) end
+    end):gsub('%d%d%d%d%d%d%d%d',function(x)
+        local c=0
+        for i=1,8 do c=c+(x:sub(i,i)=='1' and 2^(8-i) or 0) end
         return string.char(c)
     end))
 end
 
-if PlayerGui:FindFirstChild("KutakWare_Final") then PlayerGui:FindFirstChild("KutakWare_Final"):Destroy() end
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "KutakWare_Final"; ScreenGui.ResetOnSpawn = false; ScreenGui.Parent = PlayerGui
+if PlayerGui:FindFirstChild("KutakWare_V4_Final") then PlayerGui.KutakWare_V4_Final:Destroy() end
+local ScreenGui = Instance.new("ScreenGui", PlayerGui); ScreenGui.Name = "KutakWare_V4_Final"; ScreenGui.ResetOnSpawn = false
 
-local KeyFrame = Instance.new("Frame", ScreenGui)
-KeyFrame.Size = UDim2.new(0, 400, 0, 250); KeyFrame.Position = UDim2.new(0.5, -200, 0.4, 0)
-KeyFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20); Instance.new("UICorner", KeyFrame)
-local KeyTitle = Instance.new("TextLabel", KeyFrame)
-KeyTitle.Size = UDim2.new(1, 0, 0, 60); KeyTitle.Text = "🔑 KUTAK WARE | LOGIN"; KeyTitle.TextColor3 = Color3.new(1,1,1); KeyTitle.BackgroundTransparency = 1; KeyTitle.Font = Enum.Font.RobotoMono; KeyTitle.TextSize = 22
-local KeyInput = Instance.new("TextBox", KeyFrame)
-KeyInput.Size = UDim2.new(0.85, 0, 0, 50); KeyInput.Position = UDim2.new(0.075, 0, 0.35, 0); KeyInput.PlaceholderText = "Enter Key..."; KeyInput.Text = ""; KeyInput.TextSize = 20; KeyInput.Font = Enum.Font.RobotoMono
-KeyInput.BackgroundColor3 = Color3.fromRGB(35, 35, 35); KeyInput.TextColor3 = Color3.new(1,1,1); Instance.new("UICorner", KeyInput)
-local CheckBtn = Instance.new("TextButton", KeyFrame)
-CheckBtn.Size = UDim2.new(0.4, 0, 0, 50); CheckBtn.Position = UDim2.new(0.075, 0, 0.65, 0); CheckBtn.Text = "Login"; CheckBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 0); CheckBtn.TextColor3 = Color3.new(1,1,1); CheckBtn.TextSize = 20; CheckBtn.Font = Enum.Font.RobotoMono; Instance.new("UICorner", CheckBtn)
-local GetBtn = Instance.new("TextButton", KeyFrame)
-GetBtn.Size = UDim2.new(0.4, 0, 0, 50); GetBtn.Position = UDim2.new(0.525, 0, 0.65, 0); GetBtn.Text = "Discord"; GetBtn.BackgroundColor3 = Color3.fromRGB(88, 101, 242); GetBtn.TextColor3 = Color3.new(1,1,1); GetBtn.TextSize = 20; GetBtn.Font = Enum.Font.RobotoMono; Instance.new("UICorner", GetBtn)
+local MenuKey = Enum.KeyCode.K
+local Binding = false
+
+local function MakeDraggable(gui, dragPart)
+    local dragging, dragInput, dragStart, startPos
+    dragPart.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true; dragStart = input.Position; startPos = gui.Position
+            input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then dragging = false end end)
+        end
+    end)
+    dragPart.InputChanged:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseMovement then dragInput = input end end)
+    UIS.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            local delta = input.Position - dragStart
+            gui.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+end
 
 local function StartScript()
-    KeyFrame:Destroy()
     local Config = {
-        ESP = false, Aimlock = false, FullBright = false, WallCheck = true,
-        AimPart = "Head", Smoothness = 0.15, AimFOV = 150, CameraFOV = 70,
-        Prediction = 0.165, AutoLockpick = false, 
-        ESPScrap = false, ESPCrates = false,
-        ShowDistance = false, SafeESP = false
+        ESP = false, ESPNames = false, ESPHealth = false, ESPDistance = false,
+        ESPCrates = false, ESPSafes = false, ESPScrap = false,
+        Aimlock = false, WallCheck = true, AimPart = "Head", 
+        Smoothness = 0.15, AimFOV = 150, Prediction = 0.165,
+        FullBright = false
     }
     
-    local LockedTarget = nil
-    local OrigLight = {B = Lighting.Brightness, C = Lighting.ClockTime, A = Lighting.Ambient, S = Lighting.GlobalShadows}
-    
+    local OrigLight = {
+        Brightness = Lighting.Brightness,
+        ClockTime = Lighting.ClockTime,
+        GlobalShadows = Lighting.GlobalShadows,
+        Ambient = Lighting.Ambient,
+        OutdoorAmbient = Lighting.OutdoorAmbient
+    }
+
     local MainFrame = Instance.new("Frame", ScreenGui)
-    MainFrame.Size = UDim2.new(0, 550, 0, 600); MainFrame.Position = UDim2.new(0.5, -275, 0.2, 0)
-    MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15); Instance.new("UICorner", MainFrame)
+    MainFrame.Size = UDim2.new(0, 560, 0, 620); MainFrame.Position = UDim2.new(0.5, -280, 0.2, 0)
+    MainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 10); MainFrame.BorderSizePixel = 0
+    Round(MainFrame, 12)
 
-    local Header = Instance.new("Frame", MainFrame)
-    Header.Size = UDim2.new(1, 0, 0, 65); Header.BackgroundColor3 = Color3.fromRGB(25, 25, 25); Instance.new("UICorner", Header)
-    local Title = Instance.new("TextLabel", Header)
-    Title.Size = UDim2.new(1, 0, 1, 0); Title.BackgroundTransparency = 1; Title.Text = "🛡️ KutakWare V3.2"; Title.TextColor3 = Color3.new(1,1,1); Title.Font = Enum.Font.RobotoMono; Title.TextSize = 22
-
-    local LeftSide = Instance.new("Frame", MainFrame); LeftSide.Size = UDim2.new(0.5, -15, 1, -85); LeftSide.Position = UDim2.new(0, 10, 0, 75); LeftSide.BackgroundTransparency = 1
-    local RightSide = Instance.new("Frame", MainFrame); RightSide.Size = UDim2.new(0.5, -15, 1, -85); RightSide.Position = UDim2.new(0.5, 5, 0, 75); RightSide.BackgroundTransparency = 1
-
-    local function updateBtnVisual(btn, state)
-        btn.BackgroundColor3 = state and Color3.fromRGB(40, 120, 40) or Color3.fromRGB(30, 30, 30)
-    end
-
-    local function createBtn(text, parent, order, cb, defaultState)
-        local btn = Instance.new("TextButton", parent); btn.Size = UDim2.new(1, 0, 0, 45); btn.Position = UDim2.new(0, 0, 0, (order-1)*50); btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-        btn.Text = text; btn.TextColor3 = Color3.new(1,1,1); btn.Font = Enum.Font.RobotoMono; btn.TextSize = 14; Instance.new("UICorner", btn)
-        if defaultState ~= nil then updateBtnVisual(btn, defaultState) end
-        btn.MouseButton1Click:Connect(function() cb(btn) end) return btn
-    end
-
+    local TabBar = Instance.new("Frame", MainFrame)
+    TabBar.Size = UDim2.new(1, 0, 0, 65); TabBar.BackgroundColor3 = Color3.fromRGB(15, 15, 15); TabBar.BorderSizePixel = 0
+    Round(TabBar, 12)
+    MakeDraggable(MainFrame, TabBar)
     
-    task.spawn(function()
-        local SafeFolder = workspace:FindFirstChild("Map") and workspace.Map:FindFirstChild("BredMakurz")
-        while true do task.wait(0.5)
-            if Config.SafeESP and SafeFolder then
-                for _, obj in pairs(SafeFolder:GetChildren()) do
-                    if obj:IsA("Model") and (obj.Name:find("SmallSafe") or obj.Name:find("MediumSafe")) then
-                        local billboard = obj:FindFirstChild("SafeUI")
-                        if not billboard then
-                            billboard = Instance.new("BillboardGui")
-                            billboard.Name = "SafeUI"; billboard.AlwaysOnTop = true; billboard.Size = UDim2.new(0, 100, 0, 30); billboard.StudsOffset = Vector3.new(0, 3, 0); billboard.Parent = obj
-                            local label = Instance.new("TextLabel", billboard); label.Name = "SafeLabel"; label.BackgroundTransparency = 1; label.Size = UDim2.new(1, 0, 1, 0); label.Font = Enum.Font.RobotoMono; label.TextSize = 14; label.TextStrokeTransparency = 0; label.Parent = billboard
-                        end
-                        
-                        local values = obj:FindFirstChild("Values")
-                        local brokenVal = values and values:FindFirstChild("Broken")
-                        local label = billboard.SafeLabel
-                        local isBroken = (brokenVal and brokenVal.Value == true)
-                        local targetColor = isBroken and Color3.fromRGB(255, 0, 0) or Color3.fromRGB(0, 255, 0)
-                        
-                        label.Text = obj.Name:find("Small") and "Small Safe" or "Medium Safe"
-                        if label.TextColor3 ~= targetColor then label.TextColor3 = targetColor end
-                        billboard.Enabled = true
-                    end
-                end
-            else
-                if SafeFolder then
-                    for _, obj in pairs(SafeFolder:GetChildren()) do
-                        local ui = obj:FindFirstChild("SafeUI")
-                        if ui then ui.Enabled = false end
-                    end
-                end
-            end
-        end
-    end)
+    local LogoLabel = Instance.new("TextLabel", TabBar)
+    LogoLabel.Name = "LogoLabel"
+    LogoLabel.Size = UDim2.new(0, 140, 1, 0)
+    LogoLabel.Position = UDim2.new(0, 20, 0, 0)
+    LogoLabel.BackgroundTransparency = 1
+    LogoLabel.Text = "KutakWare"
+    LogoLabel.TextColor3 = Color3.new(1, 1, 1)
+    LogoLabel.Font = Enum.Font.RobotoMono
+    LogoLabel.TextSize = 22
+    LogoLabel.TextXAlignment = Enum.TextXAlignment.Left
+    
+    local Stroke = Instance.new("UIStroke", LogoLabel)
+    Stroke.Thickness = 0.5
+    Stroke.Color = Color3.new(1, 1, 1)
+    Stroke.Transparency = 0.7
 
-    task.spawn(function()
-        print("AutoLockpick............ loaded")
-        while true do task.wait()
-            if Config.AutoLockpick then
-                local lpgui = PlayerGui:FindFirstChild('LockpickGUI');
-                if (lpgui and lpgui:FindFirstChild("MF")) then
-                    pcall(function()
-                        local B1 = lpgui.MF.LP_Frame.Frames.B1.Bar.Selection;
-                        local B2 = lpgui.MF.LP_Frame.Frames.B2.Bar.Selection;
-                        local B3 = lpgui.MF.LP_Frame.Frames.B3.Bar.Selection;
-                        checkLockpick(B1, B2, B3);
-                    end)
-                end
-            end
-        end
-    end)
+    local Content = Instance.new("Frame", MainFrame)
+    Content.Size = UDim2.new(1, -20, 1, -85); Content.Position = UDim2.new(0, 10, 0, 75); Content.BackgroundTransparency = 1
 
-    local function applyHighlight(obj)
-        if not (obj:IsA("BasePart") or obj:IsA("Model")) then return end
-        if obj.Name == "S1" or obj.Name == "S2" then
-            local hl = obj:FindFirstChild("ScrapHL") or Instance.new("Highlight")
-            hl.Name = "ScrapHL"; hl.FillColor = Color3.fromRGB(255, 0, 0); hl.Parent = obj; hl.Enabled = Config.ESPScrap
-        elseif obj.Name == "SupplyCrate" or obj.Name == "C1" then
-            local hl = obj:FindFirstChild("CrateHL") or Instance.new("Highlight")
-            hl.Name = "CrateHL"; hl.FillTransparency = 0.5; hl.OutlineTransparency = 0; hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop; hl.Parent = obj
-            if obj.Name == "SupplyCrate" then hl.FillColor = Color3.fromRGB(255, 255, 0)
-            elseif obj.Name == "C1" then
-                local isT = false
-                for _, c in pairs(obj:GetChildren()) do if c:IsA("MeshPart") and c.TextureID:find("11157915894") then isT = true; break end end
-                hl.FillColor = isT and Color3.fromRGB(255, 0, 0) or Color3.fromRGB(0, 255, 0)
-            end
-            hl.Enabled = Config.ESPCrates
+    local Tabs = {}
+    local function animateTab(name)
+        for n, t in pairs(Tabs) do
+            local act = (n == name)
+            t.F.Visible = act
+            TweenService:Create(t.B, TweenInfo.new(0.3), {
+                TextColor3 = act and Color3.new(1,1,1) or Color3.fromRGB(120,120,120),
+                BackgroundColor3 = act and Color3.fromRGB(30,30,30) or Color3.fromRGB(20,20,20)
+            }):Play()
         end
     end
 
-    local function CreateDrawingESP(player)
-        if player == LocalPlayer then return end
-        local Box = Drawing.new("Square"); Box.Thickness = 1; Box.Color = Color3.new(1, 1, 1); Box.Visible = false
-        local HealthBar = Drawing.new("Square"); HealthBar.Thickness = 1; HealthBar.Filled = true; HealthBar.Visible = false
-        local Name = Drawing.new("Text"); Name.Size = 16; Name.Center = true; Name.Outline = true; Name.Color = Color3.new(1,1,1); Name.Visible = false
-        local DistText = Drawing.new("Text"); DistText.Size = 14; DistText.Center = true; DistText.Outline = true; DistText.Color = Color3.new(1,1,1); DistText.Visible = false
+    local function createTab(name, x)
+        local b = Instance.new("TextButton", TabBar)
+        b.Size = UDim2.new(0, 85, 0.6, 0); b.Position = UDim2.new(0, x, 0.2, 0); b.Text = name:lower(); b.Font = Enum.Font.RobotoMono; b.TextSize = 18; b.BackgroundColor3 = Color3.fromRGB(20,20,20); b.TextColor3 = Color3.fromRGB(120,120,120); b.BorderSizePixel = 0
+        Round(b, 6)
         
-        local connection
-        connection = RunService.RenderStepped:Connect(function()
-            if not player.Parent then Box:Remove(); HealthBar:Remove(); Name:Remove(); DistText:Remove(); connection:Disconnect(); return end
-            local char = player.Character; local hum = char and char:FindFirstChildOfClass("Humanoid"); local hrp = char and char:FindFirstChild("HumanoidRootPart")
-            if Config.ESP and char and hum and hrp and hum.Health > 0 then
-                local pos, onS = Camera:WorldToViewportPoint(hrp.Position)
-                if onS then
-                    local sizeY = (Camera:WorldToViewportPoint(hrp.Position + Vector3.new(0, 3, 0)).Y - Camera:WorldToViewportPoint(hrp.Position - Vector3.new(0, 3, 0)).Y)
-                    local sizeX = sizeY / 2; local boxX, boxY = pos.X - (sizeX/2), pos.Y - (sizeY/2)
-                    Box.Position = Vector2.new(boxX, boxY); Box.Size = Vector2.new(sizeX, sizeY); Box.Visible = true
-                    local hpPct = math.clamp(hum.Health / hum.MaxHealth, 0, 1)
-                    HealthBar.Size = Vector2.new(3, sizeY * hpPct); HealthBar.Position = Vector2.new(boxX - 6, (boxY + sizeY) - (sizeY * hpPct))
-                    HealthBar.Color = Color3.fromHSV(hpPct * 0.35, 1, 1); HealthBar.Visible = true
-                    Name.Position = Vector2.new(pos.X, boxY - 30); Name.Text = player.Name; Name.Visible = true
-                    if Config.ShowDistance and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                        local d = math.floor((LocalPlayer.Character.HumanoidRootPart.Position - hrp.Position).Magnitude)
-                        DistText.Position = Vector2.new(pos.X, boxY - 15); DistText.Text = d .. " Studs"; DistText.Visible = true
-                    else DistText.Visible = false end
-                    return
-                end
+        local f = Instance.new("ScrollingFrame", Content)
+        f.Size = UDim2.new(1,0,1,0); f.BackgroundTransparency = 1; f.Visible = false; f.ScrollBarThickness = 0; f.CanvasSize = UDim2.new(0,0,0, 650)
+        Tabs[name] = {B = b, F = f}
+        b.MouseButton1Click:Connect(function() animateTab(name) end)
+    end
+
+    createTab("Aim", 170); createTab("ESP", 265); createTab("Misc", 360); createTab("?", 455)
+
+    local function createToggle(txt, parent, key, pos, cb)
+        local b = Instance.new("TextButton", parent)
+        b.Size = UDim2.new(0, 240, 0, 50); b.Position = pos; b.BackgroundColor3 = Color3.fromRGB(25,25,25)
+        b.Font = Enum.Font.RobotoMono; b.TextSize = 17; b.BorderSizePixel = 0
+        Round(b, 8)
+        
+        if key == "AimPart" then
+            b.Text = "target: head"
+        else
+            b.Text = txt:lower() .. ": OFF"
+        end
+        b.TextColor3 = Color3.fromRGB(160,160,160)
+
+        b.MouseButton1Click:Connect(function()
+            if key == "AimPart" then
+                Config.AimPart = (Config.AimPart == "Head" and "HumanoidRootPart" or "Head")
+                b.Text = "target: " .. (Config.AimPart == "Head" and "head" or "torso")
+                b.TextColor3 = Color3.new(1,1,1)
+            else
+                Config[key] = not Config[key]
+                if cb then cb(Config[key], b) end
+                b.Text = txt:lower() .. ": " .. (Config[key] and "ON" or "OFF")
+                b.TextColor3 = Config[key] and Color3.new(1,1,1) or Color3.fromRGB(160,160,160)
+                b.BackgroundColor3 = Config[key] and Color3.fromRGB(40,40,40) or Color3.fromRGB(25,25,25)
             end
-            Box.Visible = false; HealthBar.Visible = false; Name.Visible = false; DistText.Visible = false
         end)
     end
-    for _, p in pairs(Players:GetPlayers()) do CreateDrawingESP(p) end; Players.PlayerAdded:Connect(CreateDrawingESP)
 
-    createBtn("🧊 2D ESP: [OFF]", LeftSide, 1, function(b) Config.ESP = not Config.ESP; b.Text = "🧊 2D ESP: [" .. (Config.ESP and "ON" or "OFF") .. "]"; updateBtnVisual(b, Config.ESP) end, false)
-    createBtn("🎯 AIMLOCK: [OFF]", LeftSide, 2, function(b) Config.Aimlock = not Config.Aimlock; b.Text = "🎯 AIMLOCK: [" .. (Config.Aimlock and "ON" or "OFF") .. "]"; updateBtnVisual(b, Config.Aimlock) end, false)
-    createBtn("🧱 WALL CHECK: [ON]", LeftSide, 3, function(b) Config.WallCheck = not Config.WallCheck; b.Text = "🧱 WALL CHECK: [" .. (Config.WallCheck and "ON" or "OFF") .. "]"; updateBtnVisual(b, Config.WallCheck) end, true)
-    createBtn("☀️ BRIGHT: [OFF]", LeftSide, 4, function(b) 
-        Config.FullBright = not Config.FullBright; b.Text = "☀️ BRIGHT: [" .. (Config.FullBright and "ON" or "OFF") .. "]"; updateBtnVisual(b, Config.FullBright)
-        if not Config.FullBright then Lighting.Brightness = OrigLight.B; Lighting.ClockTime = OrigLight.C; Lighting.Ambient = OrigLight.A; Lighting.GlobalShadows = OrigLight.S end
-    end, false)
-    createBtn("📦 SCRAP ESP: [OFF]", LeftSide, 5, function(b) 
-        Config.ESPScrap = not Config.ESPScrap; b.Text = "📦 SCRAP ESP: [" .. (Config.ESPScrap and "ON" or "OFF") .. "]"; updateBtnVisual(b, Config.ESPScrap)
-        if LootFolder then for _, v in pairs(LootFolder:GetChildren()) do if v.Name == "S1" or v.Name == "S2" then applyHighlight(v) end end end
-    end, false)
-    createBtn("🎁 CRATE ESP: [OFF]", LeftSide, 6, function(b) 
-        Config.ESPCrates = not Config.ESPCrates; b.Text = "🎁 CRATE ESP: [" .. (Config.ESPCrates and "ON" or "OFF") .. "]"; updateBtnVisual(b, Config.ESPCrates)
-        if LootFolder then for _, v in pairs(LootFolder:GetChildren()) do if v.Name == "SupplyCrate" or v.Name == "C1" then applyHighlight(v) end end end
-    end, false)
-    createBtn("🎯 TARGET: HEAD", LeftSide, 7, function(b) Config.AimPart = (Config.AimPart == "Head") and "HumanoidRootPart" or "Head"; b.Text = "🎯 TARGET: " .. (Config.AimPart == "Head" and "HEAD" or "TORSO") end)
-    createBtn("🔑 LOCKPICK: [OFF]", LeftSide, 8, function(b) 
-        Config.AutoLockpick = not Config.AutoLockpick; 
-        b.Text = "🔑 LOCKPICK: [" .. (Config.AutoLockpick and "ON" or "OFF") .. "]"; 
-        updateBtnVisual(b, Config.AutoLockpick)
-    end, false)
-    createBtn("📏 DISTANCE: [OFF]", LeftSide, 9, function(b) Config.ShowDistance = not Config.ShowDistance; b.Text = "📏 DISTANCE: [" .. (Config.ShowDistance and "ON" or "OFF") .. "]"; updateBtnVisual(b, Config.ShowDistance) end, false)
-    createBtn("🔐 SAFE ESP: [OFF]", LeftSide, 10, function(b) 
-        Config.SafeESP = not Config.SafeESP
-        b.Text = "🔐 SAFE ESP: [" .. (Config.SafeESP and "ON" or "OFF") .. "]"
-        updateBtnVisual(b, Config.SafeESP)
-    end, false)
-
-    local function createSlider(name, parent, order, min, max, default)
-        local f = Instance.new("Frame", parent); f.Size = UDim2.new(1, 0, 0, 80); f.Position = UDim2.new(0, 0, 0, (order-1)*85); f.BackgroundColor3 = Color3.fromRGB(25, 25, 25); Instance.new("UICorner", f)
-        local l = Instance.new("TextLabel", f); l.Size = UDim2.new(1, 0, 0, 40); l.BackgroundTransparency = 1; l.Text = name .. ": " .. default; l.TextColor3 = Color3.new(1,1,1); l.Font = Enum.Font.RobotoMono; l.TextSize = 15
-        local b = Instance.new("Frame", f); b.Size = UDim2.new(0.85, 0, 0, 6); b.Position = UDim2.new(0.075, 0, 0.75, 0); b.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-        local d = Instance.new("Frame", b); d.Size = UDim2.new(0, 16, 0, 16); d.Position = UDim2.new(0, -8, 0.5, -8); d.BackgroundColor3 = Color3.new(1,1,1); Instance.new("UICorner", d).CornerRadius = UDim.new(1,0)
-        local s = false
-        f.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then s = true end end)
-        UIS.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then s = false end end)
-        return {bar = b, dot = d, label = l, getS = function() return s end, name = name, min = min, max = max}
-    end
-
-    local aimFovS = createSlider("⚙️ AIM FOV", RightSide, 1, 50, 550, 150)
-    local smoothS = createSlider("⚙️ SMOOTH", RightSide, 2, 5, 100, 15)
-    local camFovS = createSlider("⚙️ CAM FOV", RightSide, 3, 70, 120, 70)
-    local predS = createSlider("🔮 PRED", RightSide, 4, 0, 500, 165)
-
-    local FOVCircle = Drawing.new("Circle"); FOVCircle.Thickness = 1; FOVCircle.Color = Color3.new(1,1,1); FOVCircle.Visible = false
-
-    local function IsVisible(part)
-        if not Config.WallCheck then return true end
-        local p = RaycastParams.new(); p.FilterType = Enum.RaycastFilterType.Exclude; p.FilterDescendantsInstances = {LocalPlayer.Character, part.Parent}
-        local r = workspace:Raycast(Camera.CFrame.Position, part.Position - Camera.CFrame.Position, p)
-        return r == nil
-    end
-
-    RunService.RenderStepped:Connect(function()
-        if Config.FullBright then Lighting.Brightness = 2; Lighting.ClockTime = 14; Lighting.Ambient = Color3.new(1,1,1); Lighting.GlobalShadows = false end
-        Camera.FieldOfView = Config.CameraFOV
+    local function createSlider(txt, parent, min, max, def, key, pos, div)
+        local f = Instance.new("Frame", parent); f.Size = UDim2.new(0, 260, 0, 75); f.Position = pos; f.BackgroundColor3 = Color3.fromRGB(15,15,15); f.BorderSizePixel = 0
+        Round(f, 8)
         
-        local sliders = {aimFovS, smoothS, camFovS, predS}
-        for _, sl in pairs(sliders) do
-            if sl.getS() then
-                local x = math.clamp((Mouse.X - sl.bar.AbsolutePosition.X) / sl.bar.AbsoluteSize.X, 0, 1)
-                sl.dot.Position = UDim2.new(x, -8, 0.5, -8)
-                local val = sl.min + (x * (sl.max - sl.min))
-                if sl == aimFovS then Config.AimFOV = val elseif sl == smoothS then Config.Smoothness = val/100 elseif sl == camFovS then Config.CameraFOV = val elseif sl == predS then Config.Prediction = val/1000 end
-                sl.label.Text = sl.name .. ": " .. math.floor(val)
+        local l = Instance.new("TextLabel", f); l.Size = UDim2.new(1,0,0,30); l.Text = txt:lower() .. ": " .. def; l.TextColor3 = Color3.new(1,1,1); l.Font = Enum.Font.RobotoMono; l.TextSize = 16; l.BackgroundTransparency = 1
+        local bar = Instance.new("Frame", f); bar.Size = UDim2.new(0.85, 0, 0, 4); bar.Position = UDim2.new(0.075, 0, 0.7, 0); bar.BackgroundColor3 = Color3.fromRGB(45,45,45); bar.BorderSizePixel = 0
+        Round(bar, 2)
+
+        local dot = Instance.new("Frame", bar); dot.Size = UDim2.new(0, 14, 0, 14); dot.Position = UDim2.new((def-min)/(max-min), -7, 0.5, -7); dot.BackgroundColor3 = Color3.new(1,1,1); dot.BorderSizePixel = 0
+        Round(dot, 14)
+
+        local active = false
+        f.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then active = true end end)
+        UIS.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then active = false end end)
+        RunService.RenderStepped:Connect(function()
+            if active then
+                local x = math.clamp((Mouse.X - bar.AbsolutePosition.X) / bar.AbsoluteSize.X, 0, 1)
+                dot.Position = UDim2.new(x, -7, 0.5, -7)
+                local val = min + (x * (max - min))
+                Config[key] = div and val/div or val
+                l.Text = txt:lower() .. ": " .. (div and string.format("%.2f", Config[key]) or math.floor(val))
             end
+        end)
+    end
+
+    createToggle("target", Tabs.Aim.F, "AimPart", UDim2.new(0, 5, 0, 10))
+    createToggle("aimlock", Tabs.Aim.F, "Aimlock", UDim2.new(0, 5, 0, 70))
+    createToggle("wall check", Tabs.Aim.F, "WallCheck", UDim2.new(0, 5, 0, 130))
+    createSlider("aim fov", Tabs.Aim.F, 10, 600, 150, "AimFOV", UDim2.new(0, 275, 0, 10))
+    createSlider("smoothness", Tabs.Aim.F, 1, 100, 15, "Smoothness", UDim2.new(0, 275, 0, 95), 100)
+    createSlider("prediction", Tabs.Aim.F, 0, 500, 165, "Prediction", UDim2.new(0, 275, 0, 180), 1000)
+
+    createToggle("player esp", Tabs.ESP.F, "ESP", UDim2.new(0, 5, 0, 10))
+    createToggle("health bar", Tabs.ESP.F, "ESPHealth", UDim2.new(0, 5, 0, 70))
+    createToggle("show names", Tabs.ESP.F, "ESPNames", UDim2.new(0, 5, 0, 130))
+    createToggle("distance", Tabs.ESP.F, "ESPDistance", UDim2.new(0, 5, 0, 190))
+    createToggle("crate esp", Tabs.ESP.F, "ESPCrates", UDim2.new(0, 275, 0, 10))
+    createToggle("safe esp", Tabs.ESP.F, "ESPSafes", UDim2.new(0, 275, 0, 70))
+    createToggle("scrap esp", Tabs.ESP.F, "ESPScrap", UDim2.new(0, 275, 0, 130))
+
+    createToggle("fullbright", Tabs.Misc.F, "FullBright", UDim2.new(0, 5, 0, 10), function(val)
+        if not val then
+            Lighting.Brightness = OrigLight.Brightness
+            Lighting.ClockTime = OrigLight.ClockTime
+            Lighting.GlobalShadows = OrigLight.GlobalShadows
+            Lighting.Ambient = OrigLight.Ambient
+            Lighting.OutdoorAmbient = OrigLight.OutdoorAmbient
         end
+    end)
+    
+    local Bnd = Instance.new("TextButton", Tabs.Misc.F); Bnd.Size = UDim2.new(0,240,0,50); Bnd.Position = UDim2.new(0,5,0,70); Bnd.BackgroundColor3 = Color3.fromRGB(25,25,25); Bnd.Text = "keybind: K"; Bnd.Font = Enum.Font.RobotoMono; Bnd.TextColor3 = Color3.new(1,1,1); Bnd.TextSize = 17; Bnd.BorderSizePixel = 0
+    Round(Bnd, 8)
+    Bnd.MouseButton1Click:Connect(function() Binding = true; Bnd.Text = "..." end)
+
+    local info = Instance.new("TextLabel", Tabs["?"].F); info.Size = UDim2.new(1,0,0,200); info.BackgroundTransparency = 1; info.TextColor3 = Color3.new(1,1,1); info.Font = Enum.Font.RobotoMono; info.TextSize = 16; info.Text = "KutakWare V4\n\nDiscord: discord.gg/6R5V8QKYRG\n\n[K] - Toggle Menu\n[RMB] - Aimlock\n\nFull Player & Loot ESP System"
+
+    local function AddESP(p)
+        local Box = Drawing.new("Square"); Box.Visible = false; Box.Thickness = 1; Box.Color = Color3.new(1,1,1)
+        local Health = Drawing.new("Line"); Health.Visible = false; Health.Thickness = 2; Health.Color = Color3.new(0,1,0)
+        local Name = Drawing.new("Text"); Name.Visible = false; Name.Size = 16; Name.Center = true; Name.Outline = true; Name.Color = Color3.new(1,1,1)
+
+        local connection; connection = RunService.RenderStepped:Connect(function()
+            if p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p ~= LocalPlayer then
+                if Config.ESP then
+                    local pos, onScreen = Camera:WorldToViewportPoint(p.Character.HumanoidRootPart.Position)
+                    if onScreen then
+                        local sizeX, sizeY = 2000 / pos.Z, 3000 / pos.Z
+                        local topLeft = Vector2.new(pos.X - sizeX/2, pos.Y - sizeY/2)
+                        Box.Visible = true; Box.Size = Vector2.new(sizeX, sizeY); Box.Position = topLeft
+                        if Config.ESPHealth and p.Character:FindFirstChild("Humanoid") then
+                            Health.Visible = true; Health.From = Vector2.new(topLeft.X - 5, topLeft.Y + sizeY); Health.To = Vector2.new(topLeft.X - 5, topLeft.Y + sizeY - (sizeY * (p.Character.Humanoid.Health / 100)))
+                        else Health.Visible = false end
+                        if Config.ESPNames then
+                            Name.Visible = true; Name.Position = Vector2.new(pos.X, topLeft.Y - 20)
+                            Name.Text = p.Name .. (Config.ESPDistance and " ["..math.floor(pos.Z).."]" or "")
+                        else Name.Visible = false end
+                        return
+                    end
+                end
+            end
+            Box.Visible = false; Health.Visible = false; Name.Visible = false
+            if not p.Parent then Box:Remove(); Health:Remove(); Name:Remove(); connection:Disconnect() end
+        end)
+    end
+    for _,v in pairs(Players:GetPlayers()) do AddESP(v) end Players.PlayerAdded:Connect(AddESP)
+
+local function CreateHighlight(obj, color)
+    local hl = obj:FindFirstChild("KutakHighlight")
+    if not hl then
+        hl = Instance.new("Highlight")
+        hl.Name = "KutakHighlight"
+        hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+        hl.Parent = obj
+    end
+    hl.FillColor = color
+    hl.OutlineColor = Color3.new(1, 1, 1)
+    hl.FillAlpha = 0.5
+    hl.OutlineAlpha = 0
+    return hl
+end
+
+local function AddLootESP(obj, type)
+    task.spawn(function()
+        while obj and obj.Parent do
+            local active = false
+            if type == "Crate" then active = Config.ESPCrates
+            elseif type == "Safe" then active = Config.ESPSafes
+            elseif type == "Scrap" then active = Config.ESPScrap end
+
+            local hl = obj:FindFirstChild("KutakHighlight")
+
+            if active then
+                local targetColor = Color3.fromRGB(255, 255, 255)
+
+                if type == "Scrap" then
+                    targetColor = Color3.fromRGB(255, 0, 0)
+                
+                elseif type == "Safe" then
+                    -- Прямой путь к Broken по твоим данным
+                    local values = obj:FindFirstChild("Values")
+                    local broken = values and values:FindFirstChild("Broken")
+                    
+                    if broken and (tostring(broken.Value) == "1" or broken.Value == true) then
+                        targetColor = Color3.fromRGB(255, 0, 0) -- Красный (взломан)
+                    else
+                        targetColor = Color3.fromRGB(0, 255, 0) -- Зеленый (цел)
+                    end
+
+                elseif type == "Crate" then
+                    local mesh = obj:IsA("MeshPart") and obj or obj:FindFirstChildWhichIsA("MeshPart", true)
+                    if mesh and string.find(tostring(mesh.TextureID), "11157915894") then
+                        targetColor = Color3.fromRGB(255, 0, 0)
+                    else
+                        targetColor = Color3.fromRGB(0, 255, 0)
+                    end
+                end
+
+                if not hl then
+                    hl = CreateHighlight(obj, targetColor)
+                end
+                hl.Enabled = true
+                hl.FillColor = targetColor
+            else
+                if hl then hl.Enabled = false end
+            end
+            task.wait(0.5)
+        end
+        if hl then hl:Destroy() end
+    end)
+end
+
+local function scanLoot(v)
+    local name = v.Name
+    
+    if name == "S1" or name == "S2" then
+        AddLootESP(v, "Scrap")
         
-        FOVCircle.Radius = Config.AimFOV; FOVCircle.Position = Vector2.new(Mouse.X, Mouse.Y + GuiService:GetGuiInset().Y); FOVCircle.Visible = Config.Aimlock 
+    elseif name == "SmallSafe" or name == "MediumSafe" then
+        AddLootESP(v, "Safe")
         
+    elseif name == "C1" then
+        AddLootESP(v, "Crate")
+    end
+end
+
+for _, v in pairs(workspace:GetDescendants()) do
+    task.spawn(scanLoot, v)
+end
+workspace.DescendantAdded:Connect(function(v)
+    task.spawn(scanLoot, v)
+end)
+
+    local FOV = Drawing.new("Circle"); FOV.Visible = false; FOV.Color = Color3.new(1,1,1); FOV.Thickness = 1
+    
+    RunService.RenderStepped:Connect(function()
+        FOV.Visible = Config.Aimlock; FOV.Radius = Config.AimFOV; FOV.Position = Vector2.new(Mouse.X, Mouse.Y + GuiService:GetGuiInset().Y)
+        
+        if Config.FullBright then
+            Lighting.Brightness = 2; Lighting.ClockTime = 14; Lighting.Ambient = Color3.new(1,1,1); Lighting.OutdoorAmbient = Color3.new(1,1,1); Lighting.GlobalShadows = false
+        end
+
         if Config.Aimlock and UIS:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
-            if not LockedTarget then
-                local dist = Config.AimFOV
-                for _, v in pairs(Players:GetPlayers()) do
-                    if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild(Config.AimPart) then
-                        local hum = v.Character:FindFirstChildOfClass("Humanoid")
-                        if hum and hum.Health > 0 then
-                            local part = v.Character[Config.AimPart]; local pos, onS = Camera:WorldToViewportPoint(part.Position)
-                            if onS and IsVisible(part) then
-                                local mDist = (Vector2.new(pos.X, pos.Y) - Vector2.new(Mouse.X, Mouse.Y)).Magnitude
-                                if mDist < dist then dist = mDist; LockedTarget = part end
+            local targetPart = nil
+            local minDistance = Config.AimFOV
+            
+            for _, v in pairs(Players:GetPlayers()) do
+                if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild(Config.AimPart) then
+                    local char = v.Character
+                    local part = char[Config.AimPart]
+                    local screenPos, onScreen = Camera:WorldToViewportPoint(part.Position)
+                    
+                    if onScreen then
+                        local mouseDist = (Vector2.new(screenPos.X, screenPos.Y) - Vector2.new(Mouse.X, Mouse.Y)).Magnitude
+                        if mouseDist < minDistance then
+                            local isVisible = true
+                            if Config.WallCheck then
+                                local rayParams = RaycastParams.new()
+                                rayParams.FilterType = Enum.RaycastFilterType.Exclude
+                                rayParams.FilterDescendantsInstances = {LocalPlayer.Character, char}
+                                local origin = Camera.CFrame.Position
+                                local direction = (part.Position - origin).Unit * (part.Position - origin).Magnitude
+                                local rayResult = workspace:Raycast(origin, direction, rayParams)
+                                if rayResult then isVisible = false end
+                            end
+                            if isVisible then
+                                minDistance = mouseDist
+                                targetPart = part
                             end
                         end
                     end
                 end
             end
-            if LockedTarget and LockedTarget.Parent then
-                local predPos = LockedTarget.Position + (LockedTarget.Velocity * Config.Prediction)
-                Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, predPos), Config.Smoothness)
-            else LockedTarget = nil end
-        else LockedTarget = nil end
+            
+            if targetPart then
+                local finalPos = targetPart.Position + (targetPart.Velocity * Config.Prediction)
+                Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, finalPos), Config.Smoothness)
+            end
+        end
     end)
 
-    if LootFolder then LootFolder.ChildAdded:Connect(function(d) task.defer(function() applyHighlight(d) end) end) end
-
-    local dragT, dragS, startP
-    Header.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then dragT = true; dragS = i.Position; startP = MainFrame.Position end end)
-    UIS.InputChanged:Connect(function(i) if dragT and i.UserInputType == Enum.UserInputType.MouseMovement then local delta = i.Position - dragS; MainFrame.Position = UDim2.new(startP.X.Scale, startP.X.Offset + delta.X, startP.Y.Scale, startP.Y.Offset + delta.Y) end end)
-    UIS.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then dragT = false end end)
-    UIS.InputBegan:Connect(function(i, g) if not g and i.KeyCode == Enum.KeyCode.K then MainFrame.Visible = not MainFrame.Visible end end)
+    UIS.InputBegan:Connect(function(i, g)
+        if Binding and i.UserInputType == Enum.UserInputType.Keyboard then MenuKey = i.KeyCode; Binding = false; Bnd.Text = "keybind: " .. MenuKey.Name
+        elseif not g and i.KeyCode == MenuKey then MainFrame.Visible = not MainFrame.Visible end
+    end)
+    animateTab("Aim")
 end
 
-CheckBtn.MouseButton1Click:Connect(function() if KeyInput.Text == Decode(ENCRYPTED_KEY) then StartScript() end end)
-GetBtn.MouseButton1Click:Connect(function() if setclipboard then setclipboard(DISCORD_LINK) end end)
+local LF = Instance.new("Frame", ScreenGui)
+LF.Size = UDim2.new(0, 300, 0, 240)
+LF.Position = UDim2.new(0.5, -150, 0.4, 0)
+LF.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+LF.BorderSizePixel = 0
+Round(LF, 10)
+
+local Inp = Instance.new("TextBox", LF)
+Inp.Size = UDim2.new(0.8, 0, 0, 40)
+Inp.Position = UDim2.new(0.1, 0, 0.15, 0)
+Inp.PlaceholderText = "Enter Key..."
+Inp.Text = "" 
+Inp.TextSize = 18
+Inp.Font = Enum.Font.RobotoMono
+Inp.TextColor3 = Color3.new(1, 1, 1)
+Inp.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+Inp.BorderSizePixel = 0
+Round(Inp, 6)
+
+local Btn = Instance.new("TextButton", LF)
+Btn.Size = UDim2.new(0.8, 0, 0, 40)
+Btn.Position = UDim2.new(0.1, 0, 0.45, 0)
+Btn.Text = "LOGIN"
+Btn.Font = Enum.Font.RobotoMono
+Btn.TextSize = 18
+Btn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+Btn.TextColor3 = Color3.new(1, 1, 1)
+Btn.BorderSizePixel = 0
+Round(Btn, 6)
+
+local DiscBtn = Instance.new("TextButton", LF)
+DiscBtn.Size = UDim2.new(0.8, 0, 0, 40)
+DiscBtn.Position = UDim2.new(0.1, 0, 0.7, 0)
+DiscBtn.Text = "DISCORD"
+DiscBtn.Font = Enum.Font.RobotoMono
+DiscBtn.TextSize = 18
+DiscBtn.BackgroundColor3 = Color3.fromRGB(88, 101, 242) 
+DiscBtn.TextColor3 = Color3.new(1, 1, 1)
+DiscBtn.BorderSizePixel = 0
+Round(DiscBtn, 6)
+
+Btn.MouseButton1Click:Connect(function() 
+    if Inp.Text == Decode(ENCRYPTED_KEY) then 
+        LF:Destroy() 
+        StartScript() 
+    else
+        Btn.Text = "WRONG KEY"
+        task.wait(1)
+        Btn.Text = "LOGIN"
+    end 
+end)
+
+DiscBtn.MouseButton1Click:Connect(function()
+    if setclipboard then
+        setclipboard("https://discord.gg/6R5V8QKYRG")
+        DiscBtn.Text = "COPIED!"
+        task.wait(1)
+        DiscBtn.Text = "DISCORD"
+    else
+        DiscBtn.Text = "discord.gg/6R5V8QKYRG"
+    end
+end)
+
+Btn.MouseButton1Click:Connect(function() if Inp.Text == Decode(ENCRYPTED_KEY) then LF:Destroy(); StartScript() end end)
