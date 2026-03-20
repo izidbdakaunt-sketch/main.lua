@@ -51,7 +51,7 @@ local function StartScript()
         AimPart = "Head", Smoothness = 0.15, AimFOV = 150, CameraFOV = 70,
         Prediction = 0.165, AutoLockpick = false, 
         ESPScrap = false, ESPCrates = false,
-        ShowDistance = false
+        ShowDistance = false, SafeESP = false
     }
     
     local LockedTarget = nil
@@ -80,17 +80,41 @@ local function StartScript()
         btn.MouseButton1Click:Connect(function() cb(btn) end) return btn
     end
 
-    local function checkLockpick(...)
-        local frames = { ... };
-        for i,v in pairs(frames) do
-            if v and v.Parent and v.Parent:FindFirstChild("UIScale") then
-                v.Parent.UIScale.Scale = 10
-            end
-            if (v.AbsolutePosition.Y >= 450 and v.AbsolutePosition.Y <= 550) then
-                if mouse1click then mouse1click(); task.wait(0.1); mouse1release(); end
+    -- Логика Safe ESP (Надписи)
+    task.spawn(function()
+        local SafeFolder = workspace:FindFirstChild("Map") and workspace.Map:FindFirstChild("BredMakurz")
+        while true do task.wait(0.5)
+            if Config.SafeESP and SafeFolder then
+                for _, obj in pairs(SafeFolder:GetChildren()) do
+                    if obj:IsA("Model") and (obj.Name:find("SmallSafe") or obj.Name:find("MediumSafe")) then
+                        local billboard = obj:FindFirstChild("SafeUI")
+                        if not billboard then
+                            billboard = Instance.new("BillboardGui")
+                            billboard.Name = "SafeUI"; billboard.AlwaysOnTop = true; billboard.Size = UDim2.new(0, 100, 0, 30); billboard.StudsOffset = Vector3.new(0, 3, 0); billboard.Parent = obj
+                            local label = Instance.new("TextLabel", billboard); label.Name = "SafeLabel"; label.BackgroundTransparency = 1; label.Size = UDim2.new(1, 0, 1, 0); label.Font = Enum.Font.RobotoMono; label.TextSize = 14; label.TextStrokeTransparency = 0; label.Parent = billboard
+                        end
+                        
+                        local values = obj:FindFirstChild("Values")
+                        local brokenVal = values and values:FindFirstChild("Broken")
+                        local label = billboard.SafeLabel
+                        local isBroken = (brokenVal and brokenVal.Value == true)
+                        local targetColor = isBroken and Color3.fromRGB(255, 0, 0) or Color3.fromRGB(0, 255, 0)
+                        
+                        label.Text = obj.Name:find("Small") and "Small Safe" or "Medium Safe"
+                        if label.TextColor3 ~= targetColor then label.TextColor3 = targetColor end
+                        billboard.Enabled = true
+                    end
+                end
+            else
+                if SafeFolder then
+                    for _, obj in pairs(SafeFolder:GetChildren()) do
+                        local ui = obj:FindFirstChild("SafeUI")
+                        if ui then ui.Enabled = false end
+                    end
+                end
             end
         end
-    end
+    end)
 
     task.spawn(function()
         print("AutoLockpick............ loaded")
@@ -182,6 +206,11 @@ local function StartScript()
         updateBtnVisual(b, Config.AutoLockpick)
     end, false)
     createBtn("📏 DISTANCE: [OFF]", LeftSide, 9, function(b) Config.ShowDistance = not Config.ShowDistance; b.Text = "📏 DISTANCE: [" .. (Config.ShowDistance and "ON" or "OFF") .. "]"; updateBtnVisual(b, Config.ShowDistance) end, false)
+    createBtn("🔐 SAFE ESP: [OFF]", LeftSide, 10, function(b) 
+        Config.SafeESP = not Config.SafeESP
+        b.Text = "🔐 SAFE ESP: [" .. (Config.SafeESP and "ON" or "OFF") .. "]"
+        updateBtnVisual(b, Config.SafeESP)
+    end, false)
 
     local function createSlider(name, parent, order, min, max, default)
         local f = Instance.new("Frame", parent); f.Size = UDim2.new(1, 0, 0, 80); f.Position = UDim2.new(0, 0, 0, (order-1)*85); f.BackgroundColor3 = Color3.fromRGB(25, 25, 25); Instance.new("UICorner", f)
