@@ -101,9 +101,14 @@ CreateToggle("Scrap", Tabs.Loot.P, "Scrap")
 CreateToggle("FullBright", Tabs.Misc.P, "FullBright")
 
 local FOV = Instance.new("Frame", ScreenGui); FOV.AnchorPoint = Vector2.new(0.5,0.5); FOV.Position = UDim2.new(0.5,0,0.5,0); FOV.BackgroundTransparency = 1; Round(FOV, 1000); local Stroke = Instance.new("UIStroke", FOV); Stroke.Color = Color3.new(1,1,1)
-local AimBtn = Instance.new("TextButton", ScreenGui); AimBtn.Size = UDim2.new(0, 90, 0, 90); AimBtn.Position = UDim2.new(0.8, 0, 0.4, 0); AimBtn.Text = "AIM"; AimBtn.BackgroundColor3 = Color3.fromRGB(30,30,30); AimBtn.TextColor3 = Color3.new(1,1,1); Round(AimBtn, 45); AimBtn.BackgroundTransparency = 0.5; AimBtn.Visible = false
-local AimHold = false; AimBtn.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.Touch or i.UserInputType == Enum.UserInputType.MouseButton1 then AimHold = true end end)
-AimBtn.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.Touch or i.UserInputType == Enum.UserInputType.MouseButton1 then AimHold = false end end)
+local AimBtn = Instance.new("TextButton", ScreenGui); AimBtn.Size = UDim2.new(0, 90, 0, 90); AimBtn.Position = UDim2.new(0.8, 0, 0.4, 0); AimBtn.Text = "AIM: OFF"; AimBtn.BackgroundColor3 = Color3.fromRGB(30,30,30); AimBtn.TextColor3 = Color3.new(1,1,1); Round(AimBtn, 45); AimBtn.BackgroundTransparency = 0.5; AimBtn.Visible = false; MakeDraggable(AimBtn, AimBtn)
+
+local AimActive = false
+AimBtn.MouseButton1Click:Connect(function()
+    AimActive = not AimActive
+    AimBtn.Text = "AIM: "..(AimActive and "ON" or "OFF")
+    AimBtn.BackgroundColor3 = AimActive and Color3.fromRGB(60,60,60) or Color3.fromRGB(30,30,30)
+end)
 
 local MenuBtn = Instance.new("TextButton", ScreenGui); MenuBtn.Size = UDim2.new(0, 60, 0, 60); MenuBtn.Position = UDim2.new(0, 20, 0.1, 0); MenuBtn.Text = "KW"; MenuBtn.BackgroundColor3 = Color3.fromRGB(30,30,30); MenuBtn.TextColor3 = Color3.new(1,1,1); Round(MenuBtn, 30); MakeDraggable(MenuBtn, MenuBtn); MenuBtn.MouseButton1Click:Connect(function() Main.Visible = not Main.Visible end)
 
@@ -111,7 +116,7 @@ RunService.RenderStepped:Connect(function()
     FOV.Visible = Config.Aimlock; FOV.Size = UDim2.new(0, Config.AimFOV * 2, 0, Config.AimFOV * 2)
     AimBtn.Visible = Config.Aimlock
     if Config.FullBright then Lighting.Brightness = 2; Lighting.ClockTime = 14; Lighting.FogEnd = 100000; Lighting.GlobalShadows = false; Lighting.OutdoorAmbient = Color3.new(1,1,1) end
-    if AimHold and Config.Aimlock then
+    if AimActive and Config.Aimlock then
         local t, d = nil, Config.AimFOV
         for _, v in pairs(Players:GetPlayers()) do
             if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild(Config.AimPart) then
