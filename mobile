@@ -1,0 +1,159 @@
+local Players = game:GetService("Players")
+local UIS = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local Lighting = game:GetService("Lighting")
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+local Camera = workspace.CurrentCamera
+
+if PlayerGui:FindFirstChild("KutakWare_Final_Fix") then PlayerGui.KutakWare_Final_Fix:Destroy() end
+local ScreenGui = Instance.new("ScreenGui", PlayerGui); ScreenGui.Name = "KutakWare_Final_Fix"; ScreenGui.ResetOnSpawn = false
+
+local Config = {
+    Aimlock = false, AimPart = "Head", Smoothness = 0.15, AimFOV = 150, Prediction = 0.165,
+    ESP = false, ESPNames = false, ESPHealth = false, ESPDistance = false,
+    Crates = false, Safes = false, Scrap = false, FullBright = false
+}
+
+local Orig = { Br = Lighting.Brightness, Cl = Lighting.ClockTime, Sh = Lighting.GlobalShadows, Amb = Lighting.OutdoorAmbient, Fg = Lighting.FogEnd }
+
+local function Round(p, r)
+    local c = Instance.new("UICorner"); c.CornerRadius = UDim.new(0, r or 8); c.Parent = p
+end
+
+local function MakeDraggable(gui, dragPart)
+    local dragging, dragInput, dragStart, startPos
+    dragPart.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true; dragStart = input.Position; startPos = gui.Position
+        end
+    end)
+    UIS.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local delta = input.Position - dragStart
+            gui.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+    dragPart.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = false end end)
+end
+
+local Main = Instance.new("Frame", ScreenGui); Main.Size = UDim2.new(0, 460, 0, 340); Main.Position = UDim2.new(0.5, -230, 0.5, -170); Main.BackgroundColor3 = Color3.fromRGB(15, 15, 15); Main.Visible = false; Round(Main, 10)
+local Header = Instance.new("Frame", Main); Header.Size = UDim2.new(1, 0, 0, 40); Header.BackgroundColor3 = Color3.fromRGB(25, 25, 25); Round(Header, 10); MakeDraggable(Main, Header)
+local Container = Instance.new("Frame", Main); Container.Size = UDim2.new(1, -10, 1, -50); Container.Position = UDim2.new(0, 5, 0, 45); Container.BackgroundTransparency = 1
+
+local Tabs = {}
+local function CreateTab(name, pos)
+    local btn = Instance.new("TextButton", Header); btn.Size = UDim2.new(0.25, 0, 1, 0); btn.Position = UDim2.new(pos * 0.25, 0, 0, 0); btn.Text = name; btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30); btn.TextColor3 = Color3.new(0.6, 0.6, 0.6); btn.Font = Enum.Font.GothamBold; btn.BackgroundTransparency = 1
+    local page = Instance.new("ScrollingFrame", Container); page.Size = UDim2.new(1, 0, 1, 0); page.Visible = false; page.BackgroundTransparency = 1; page.ScrollBarThickness = 0; page.CanvasSize = UDim2.new(0,0,1.8,0)
+    Instance.new("UIListLayout", page).Padding = UDim.new(0, 5)
+    Tabs[name] = {B = btn, P = page}
+    btn.MouseButton1Click:Connect(function()
+        for _, t in pairs(Tabs) do t.P.Visible = false; t.B.TextColor3 = Color3.new(0.6, 0.6, 0.6) end
+        page.Visible = true; btn.TextColor3 = Color3.new(1, 1, 1)
+    end)
+end
+
+CreateTab("Aim", 0); CreateTab("ESP", 1); CreateTab("Loot", 2); CreateTab("Misc", 3)
+Tabs.Aim.P.Visible = true; Tabs.Aim.B.TextColor3 = Color3.new(1, 1, 1)
+
+local function CreateToggle(txt, parent, key)
+    local b = Instance.new("TextButton", parent); b.Size = UDim2.new(0.98, 0, 0, 38); b.BackgroundColor3 = Color3.fromRGB(30,30,30); b.Text = txt..": OFF"; b.TextColor3 = Color3.new(0.7,0.7,0.7); b.Font = Enum.Font.Gotham; Round(b, 6)
+    b.MouseButton1Click:Connect(function()
+        Config[key] = not Config[key]
+        b.Text = txt..": "..(Config[key] and "ON" or "OFF")
+        b.BackgroundColor3 = Config[key] and Color3.fromRGB(50,50,50) or Color3.fromRGB(30,30,30)
+        b.TextColor3 = Config[key] and Color3.new(1,1,1) or Color3.new(0.7,0.7,0.7)
+        if key == "FullBright" and not Config.FullBright then
+            Lighting.Brightness = Orig.Br; Lighting.ClockTime = Orig.Cl; Lighting.GlobalShadows = Orig.Sh; Lighting.OutdoorAmbient = Orig.Amb; Lighting.FogEnd = Orig.Fg
+        end
+    end)
+end
+
+local function CreateSlider(txt, parent, key, min, max, dec)
+    local f = Instance.new("Frame", parent); f.Size = UDim2.new(0.98, 0, 0, 50); f.BackgroundTransparency = 1
+    local l = Instance.new("TextLabel", f); l.Size = UDim2.new(1, 0, 0, 20); l.Text = txt..": "..Config[key]; l.TextColor3 = Color3.new(1,1,1); l.Font = Enum.Font.Gotham; l.BackgroundTransparency = 1
+    local s = Instance.new("Frame", f); s.Size = UDim2.new(1, 0, 0, 10); s.Position = UDim2.new(0,0,0,25); s.BackgroundColor3 = Color3.fromRGB(40,40,40); Round(s, 5)
+    local fill = Instance.new("Frame", s); fill.Size = UDim2.new((Config[key]-min)/(max-min), 0, 1, 0); fill.BackgroundColor3 = Color3.new(1,1,1); Round(fill, 5)
+    local function Upd(i)
+        local p = math.clamp((i.Position.X - s.AbsolutePosition.X) / s.AbsoluteSize.X, 0, 1)
+        local v = min + (max - min) * p
+        if dec then v = math.floor(v * 100) / 100 end
+        Config[key] = v; fill.Size = UDim2.new(p, 0, 1, 0); l.Text = txt..": "..Config[key]
+    end
+    s.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.Touch or i.UserInputType == Enum.UserInputType.MouseButton1 then Upd(i) end end)
+end
+
+CreateToggle("Aimlock", Tabs.Aim.P, "Aimlock")
+local partB = Instance.new("TextButton", Tabs.Aim.P); partB.Size = UDim2.new(0.98, 0, 0, 38); partB.BackgroundColor3 = Color3.fromRGB(30,30,30); partB.Text = "Target: Head"; partB.TextColor3 = Color3.new(1,1,1); Round(partB, 6)
+partB.MouseButton1Click:Connect(function() Config.AimPart = (Config.AimPart == "Head" and "HumanoidRootPart" or "Head"); partB.Text = "Target: "..Config.AimPart end)
+CreateSlider("FOV Size", Tabs.Aim.P, "AimFOV", 10, 800, false)
+CreateSlider("Smoothness", Tabs.Aim.P, "Smoothness", 0.01, 1, true)
+CreateSlider("Prediction", Tabs.Aim.P, "Prediction", 0, 1, true)
+
+CreateToggle("ESP Players", Tabs.ESP.P, "ESP")
+CreateToggle("Names", Tabs.ESP.P, "ESPNames")
+CreateToggle("Health", Tabs.ESP.P, "ESPHealth")
+CreateToggle("Distance", Tabs.ESP.P, "ESPDistance")
+
+CreateToggle("Crates", Tabs.Loot.P, "Crates")
+CreateToggle("Safes", Tabs.Loot.P, "Safes")
+CreateToggle("Scrap", Tabs.Loot.P, "Scrap")
+CreateToggle("FullBright", Tabs.Misc.P, "FullBright")
+
+local FOV = Instance.new("Frame", ScreenGui); FOV.AnchorPoint = Vector2.new(0.5,0.5); FOV.Position = UDim2.new(0.5,0,0.5,0); FOV.BackgroundTransparency = 1; Round(FOV, 1000); local Stroke = Instance.new("UIStroke", FOV); Stroke.Color = Color3.new(1,1,1)
+local AimBtn = Instance.new("TextButton", ScreenGui); AimBtn.Size = UDim2.new(0, 90, 0, 90); AimBtn.Position = UDim2.new(0.8, 0, 0.4, 0); AimBtn.Text = "AIM"; AimBtn.BackgroundColor3 = Color3.fromRGB(30,30,30); AimBtn.TextColor3 = Color3.new(1,1,1); Round(AimBtn, 45); AimBtn.BackgroundTransparency = 0.5; AimBtn.Visible = false
+local AimHold = false; AimBtn.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.Touch or i.UserInputType == Enum.UserInputType.MouseButton1 then AimHold = true end end)
+AimBtn.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.Touch or i.UserInputType == Enum.UserInputType.MouseButton1 then AimHold = false end end)
+
+local MenuBtn = Instance.new("TextButton", ScreenGui); MenuBtn.Size = UDim2.new(0, 60, 0, 60); MenuBtn.Position = UDim2.new(0, 20, 0.1, 0); MenuBtn.Text = "KW"; MenuBtn.BackgroundColor3 = Color3.fromRGB(30,30,30); MenuBtn.TextColor3 = Color3.new(1,1,1); Round(MenuBtn, 30); MakeDraggable(MenuBtn, MenuBtn); MenuBtn.MouseButton1Click:Connect(function() Main.Visible = not Main.Visible end)
+
+RunService.RenderStepped:Connect(function()
+    FOV.Visible = Config.Aimlock; FOV.Size = UDim2.new(0, Config.AimFOV * 2, 0, Config.AimFOV * 2)
+    AimBtn.Visible = Config.Aimlock
+    if Config.FullBright then Lighting.Brightness = 2; Lighting.ClockTime = 14; Lighting.FogEnd = 100000; Lighting.GlobalShadows = false; Lighting.OutdoorAmbient = Color3.new(1,1,1) end
+    if AimHold and Config.Aimlock then
+        local t, d = nil, Config.AimFOV
+        for _, v in pairs(Players:GetPlayers()) do
+            if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild(Config.AimPart) then
+                local p = v.Character[Config.AimPart]; local s, on = Camera:WorldToViewportPoint(p.Position)
+                if on then
+                    local m = (Vector2.new(s.X, s.Y) - Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)).Magnitude
+                    if m < d then t = p; d = m end
+                end
+            end
+        end
+        if t then Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, t.Position + (t.Velocity * Config.Prediction)), Config.Smoothness) end
+    end
+end)
+
+local function AddESP(p)
+    local b = Instance.new("Frame", ScreenGui); b.BackgroundTransparency = 1; b.Visible = false; Instance.new("UIStroke", b).Color = Color3.new(1,1,1)
+    local h = Instance.new("Frame", b); h.Size = UDim2.new(0, 2, 1, 0); h.Position = UDim2.new(0, -5, 0, 0); h.BackgroundColor3 = Color3.new(0,1,0)
+    local n = Instance.new("TextLabel", b); n.Size = UDim2.new(1, 0, 0, 20); n.Position = UDim2.new(0, 0, 0, -20); n.BackgroundTransparency = 1; n.TextColor3 = Color3.new(1,1,1); n.Font = Enum.Font.GothamBold; n.TextSize = 10
+    RunService.RenderStepped:Connect(function()
+        if Config.ESP and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+            local cf, sz = p.Character:GetBoundingBox()
+            local pos, on = Camera:WorldToViewportPoint(cf.Position)
+            if on then
+                local top = Camera:WorldToViewportPoint((cf * CFrame.new(0, sz.Y/2, 0)).Position)
+                local bottom = Camera:WorldToViewportPoint((cf * CFrame.new(0, -sz.Y/2, 0)).Position)
+                local height = math.abs(top.Y - bottom.Y)
+                local width = height * 0.6
+                
+                b.Visible = true; b.Size = UDim2.new(0, width, 0, height); b.Position = UDim2.new(0, pos.X - width/2, 0, pos.Y - height/2)
+                h.Visible = Config.ESPHealth; n.Visible = Config.ESPNames; n.Text = p.Name .. (Config.ESPDistance and " ["..math.floor(pos.Z).."]" or "")
+                if p.Character:FindFirstChild("Humanoid") then h.Size = UDim2.new(0, 2, p.Character.Humanoid.Health/p.Character.Humanoid.MaxHealth, 0) end
+                return
+            end
+        end
+        b.Visible = false
+    end)
+end
+for _, v in pairs(Players:GetPlayers()) do if v ~= LocalPlayer then AddESP(v) end end
+Players.PlayerAdded:Connect(AddESP)
+
+local Login = Instance.new("Frame", ScreenGui); Login.Size = UDim2.new(0, 300, 0, 220); Login.Position = UDim2.new(0.5, -150, 0.5, -110); Login.BackgroundColor3 = Color3.fromRGB(12, 12, 12); Round(Login, 10)
+local Inp = Instance.new("TextBox", Login); Inp.Size = UDim2.new(0.8, 0, 0, 40); Inp.Position = UDim2.new(0.1, 0, 0.15, 0); Inp.PlaceholderText = "Key..."; Inp.BackgroundColor3 = Color3.fromRGB(25, 25, 25); Inp.TextColor3 = Color3.new(1, 1, 1); Round(Inp, 5)
+local Lb = Instance.new("TextButton", Login); Lb.Size = UDim2.new(0.8, 0, 0, 40); Lb.Position = UDim2.new(0.1, 0, 0.45, 0); Lb.Text = "LOGIN"; Lb.BackgroundColor3 = Color3.fromRGB(40, 40, 40); Lb.TextColor3 = Color3.new(1, 1, 1); Round(Lb, 5)
+local Db = Instance.new("TextButton", Login); Db.Size = UDim2.new(0.8, 0, 0, 40); Db.Position = UDim2.new(0.1, 0, 0.75, 0); Db.Text = "DISCORD"; Db.BackgroundColor3 = Color3.fromRGB(88, 101, 242); Db.TextColor3 = Color3.new(1, 1, 1); Round(Db, 5)
+Lb.MouseButton1Click:Connect(function() if Inp.Text == "DoYouLikeUI?" then Login:Destroy(); Main.Visible = true end end)
