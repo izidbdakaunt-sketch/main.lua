@@ -7,7 +7,7 @@ local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 local Camera = workspace.CurrentCamera
 
 if PlayerGui:FindFirstChild("KutakWare_Final_Fix") then PlayerGui.KutakWare_Final_Fix:Destroy() end
-local ScreenGui = Instance.new("ScreenGui", PlayerGui); ScreenGui.Name = "KutakWare_Final_Fix"; ScreenGui.ResetOnSpawn = false
+local ScreenGui = Instance.new("ScreenGui", PlayerGui); ScreenGui.Name = "KutakWare_Final_Fix"; ScreenGui.ResetOnSpawn = false; ScreenGui.IgnoreGuiInset = true -- Игнорируем отступ сверху для точности
 
 local Config = {
     Aimlock = false, WallCheck = true, AimPart = "Head", Smoothness = 0.15, AimFOV = 150, Prediction = 0.165,
@@ -101,127 +101,82 @@ CreateToggle("Safes", Tabs.Loot.P, "Safes")
 CreateToggle("Scrap", Tabs.Loot.P, "Scrap")
 CreateToggle("FullBright", Tabs.Misc.P, "FullBright")
 
--- Фикс FOV Circle
+-- ИСПРАВЛЕННЫЙ FOV CIRCLE (Идеально по центру)
 local FOV = Instance.new("Frame", ScreenGui)
 FOV.AnchorPoint = Vector2.new(0.5, 0.5)
 FOV.Position = UDim2.new(0.5, 0, 0.5, 0)
 FOV.BackgroundTransparency = 1
 Round(FOV, 1000)
-local Stroke = Instance.new("UIStroke", FOV)
-Stroke.Thickness = 1
-Stroke.Color = Color3.new(1, 1, 1)
+local Stroke = Instance.new("UIStroke", FOV); Stroke.Color = Color3.new(1, 1, 1)
 
--- Кнопка Aim (с перетаскиванием и переключением)
-local AimBtn = Instance.new("TextButton", ScreenGui)
-AimBtn.Size = UDim2.new(0, 90, 0, 90)
-AimBtn.Position = UDim2.new(0.8, 0, 0.4, 0)
-AimBtn.Text = "AIM"
-AimBtn.BackgroundColor3 = Color3.fromRGB(30,30,30)
-AimBtn.TextColor3 = Color3.new(1,1,1)
-Round(AimBtn, 45)
-AimBtn.BackgroundTransparency = 0.5
-AimBtn.Visible = false
+local AimBtn = Instance.new("TextButton", ScreenGui); AimBtn.Size = UDim2.new(0, 90, 0, 90); AimBtn.Position = UDim2.new(0.8, 0, 0.4, 0); AimBtn.Text = "AIM"; AimBtn.BackgroundColor3 = Color3.fromRGB(30,30,30); AimBtn.TextColor3 = Color3.new(1,1,1); Round(AimBtn, 45); AimBtn.BackgroundTransparency = 0.5; AimBtn.Visible = false
 MakeDraggable(AimBtn, AimBtn)
 
 local AimActive = false
 AimBtn.MouseButton1Click:Connect(function()
     AimActive = not AimActive
-    AimBtn.BackgroundTransparency = AimActive and 0.2 or 0.5
-    AimBtn.TextColor3 = AimActive and Color3.new(0, 1, 0) or Color3.new(1, 1, 1)
+    AimBtn.BackgroundColor3 = AimActive and Color3.fromRGB(60, 60, 60) or Color3.fromRGB(30, 30, 30)
 end)
 
--- Кнопка Menu (с перетаскиванием)
-local MenuBtn = Instance.new("TextButton", ScreenGui)
-MenuBtn.Size = UDim2.new(0, 60, 0, 60)
-MenuBtn.Position = UDim2.new(0, 20, 0.1, 0)
-MenuBtn.Text = "KW"
-MenuBtn.BackgroundColor3 = Color3.fromRGB(30,30,30)
-MenuBtn.TextColor3 = Color3.new(1,1,1)
-Round(MenuBtn, 30)
-MakeDraggable(MenuBtn, MenuBtn)
-MenuBtn.MouseButton1Click:Connect(function() Main.Visible = not Main.Visible end)
+local MenuBtn = Instance.new("TextButton", ScreenGui); MenuBtn.Size = UDim2.new(0, 60, 0, 60); MenuBtn.Position = UDim2.new(0, 20, 0.1, 0); MenuBtn.Text = "KW"; MenuBtn.BackgroundColor3 = Color3.fromRGB(30,30,30); MenuBtn.TextColor3 = Color3.new(1,1,1); Round(MenuBtn, 30); MakeDraggable(MenuBtn, MenuBtn); MenuBtn.MouseButton1Click:Connect(function() Main.Visible = not Main.Visible end)
 
 RunService.RenderStepped:Connect(function()
-    FOV.Visible = Config.Aimlock
-    -- Центрирование круга по размеру
-    FOV.Size = UDim2.new(0, Config.AimFOV * 2, 0, Config.AimFOV * 2)
+    FOV.Visible = Config.Aimlock; FOV.Size = UDim2.new(0, Config.AimFOV * 2, 0, Config.AimFOV * 2)
     AimBtn.Visible = Config.Aimlock
-    
-    if Config.FullBright then 
-        Lighting.Brightness = 2; Lighting.ClockTime = 14; Lighting.FogEnd = 100000; Lighting.GlobalShadows = false; Lighting.OutdoorAmbient = Color3.new(1,1,1) 
-    end
+    if Config.FullBright then Lighting.Brightness = 2; Lighting.ClockTime = 14; Lighting.FogEnd = 100000; Lighting.GlobalShadows = false; Lighting.OutdoorAmbient = Color3.new(1,1,1) end
     
     if AimActive and Config.Aimlock then
-        local targetPart, minDistance = nil, Config.AimFOV
+        local t, d = nil, Config.AimFOV
         for _, v in pairs(Players:GetPlayers()) do
             if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild(Config.AimPart) then
-                local p = v.Character[Config.AimPart]
-                local screenPos, onScreen = Camera:WorldToViewportPoint(p.Position)
-                if onScreen then
-                    local mouseDistance = (Vector2.new(screenPos.X, screenPos.Y) - Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)).Magnitude
-                    if mouseDistance < minDistance then
-                        local isVisible = true
+                local p = v.Character[Config.AimPart]; 
+                local s, on = Camera:WorldToViewportPoint(p.Position)
+                if on then
+                    local m = (Vector2.new(s.X, s.Y) - Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)).Magnitude
+                    if m < d then
+                        local vis = true
+                        -- ИСПРАВЛЕННЫЙ WallCheck
                         if Config.WallCheck then
-                            local rayParams = RaycastParams.new()
-                            rayParams.FilterDescendantsInstances = {LocalPlayer.Character, v.Character}
-                            rayParams.FilterType = Enum.RaycastFilterType.Exclude
-                            if workspace:Raycast(Camera.CFrame.Position, (p.Position - Camera.CFrame.Position).Unit * 500, rayParams) then 
-                                isVisible = false 
+                            local r = RaycastParams.new()
+                            r.FilterDescendantsInstances = {LocalPlayer.Character, v.Character}
+                            r.FilterType = Enum.RaycastFilterType.Exclude
+                            local cast = workspace:Raycast(Camera.CFrame.Position, (p.Position - Camera.CFrame.Position).Unit * 1000, r)
+                            if cast and cast.Instance then
+                                -- Если луч попал в объект, который не является прозрачным или мелким декором
+                                if cast.Instance.CanCollide and cast.Instance.Transparency < 0.5 then
+                                    vis = false 
+                                end
                             end
                         end
-                        if isVisible then 
-                            targetPart = p
-                            minDistance = mouseDistance 
-                        end
+                        if vis then t = p; d = m end
                     end
                 end
             end
         end
-        if targetPart then 
-            Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, targetPart.Position + (targetPart.Velocity * Config.Prediction)), Config.Smoothness) 
-        end
+        if t then Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, t.Position + (t.Velocity * Config.Prediction)), Config.Smoothness) end
     end
 end)
 
--- Фикс ESP (Центрирование рамки)
 local function AddESP(p)
-    local b = Instance.new("Frame", ScreenGui)
-    b.BackgroundTransparency = 1
-    b.Visible = false
-    local stroke = Instance.new("UIStroke", b)
-    stroke.Color = Color3.new(1,1,1)
+    local b = Instance.new("Frame", ScreenGui); b.BackgroundTransparency = 1; b.Visible = false; Instance.new("UIStroke", b).Color = Color3.new(1,1,1)
+    local h = Instance.new("Frame", b); h.Size = UDim2.new(0, 2, 1, 0); h.Position = UDim2.new(0, -5, 0, 0); h.BackgroundColor3 = Color3.new(0,1,0)
+    local n = Instance.new("TextLabel", b); n.Size = UDim2.new(1, 0, 0, 20); n.Position = UDim2.new(0, 0, 0, -20); n.BackgroundTransparency = 1; n.TextColor3 = Color3.new(1,1,1); n.Font = Enum.Font.GothamBold; n.TextSize = 10
     
-    local h = Instance.new("Frame", b)
-    h.Size = UDim2.new(0, 2, 1, 0)
-    h.Position = UDim2.new(0, -5, 0, 0)
-    h.BackgroundColor3 = Color3.new(0,1,0)
-    
-    local n = Instance.new("TextLabel", b)
-    n.Size = UDim2.new(1, 0, 0, 20)
-    n.Position = UDim2.new(0, 0, 0, -20)
-    n.BackgroundTransparency = 1
-    n.TextColor3 = Color3.new(1,1,1)
-    n.Font = Enum.Font.GothamBold
-    n.TextSize = 10
-
     RunService.RenderStepped:Connect(function()
         if Config.ESP and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
             local root = p.Character.HumanoidRootPart
+            -- ИСПРАВЛЕННОЕ ПОЛОЖЕНИЕ ESP
             local pos, on = Camera:WorldToViewportPoint(root.Position)
             if on then
-                local sz = 4500 / pos.Z -- Слегка подкорректирован размер
-                b.Visible = true
+                local sz = 4000 / pos.Z -- Масштабирование от дистанции
+                b.Visible = true; 
                 b.Size = UDim2.new(0, sz * 0.7, 0, sz)
-                -- Центрируем рамку: вычитаем половину размера из экранных координат
-                b.Position = UDim2.new(0, pos.X - (b.Size.X.Offset / 2), 0, pos.Y - (b.Size.Y.Offset / 2))
+                -- Центрируем рамку строго по координатам игрока (без смещения под карту)
+                b.Position = UDim2.new(0, pos.X - (b.Size.X.Offset/2), 0, pos.Y - (b.Size.Y.Offset/2))
                 
-                h.Visible = Config.ESPHealth
-                n.Visible = Config.ESPNames
+                h.Visible = Config.ESPHealth; n.Visible = Config.ESPNames
                 n.Text = p.Name .. (Config.ESPDistance and " ["..math.floor(pos.Z).."]" or "")
-                
-                if p.Character:FindFirstChild("Humanoid") then 
-                    h.Size = UDim2.new(0, 2, p.Character.Humanoid.Health/p.Character.Humanoid.MaxHealth, 0) 
-                end
+                if p.Character:FindFirstChild("Humanoid") then h.Size = UDim2.new(0, 2, p.Character.Humanoid.Health/p.Character.Humanoid.MaxHealth, 0) end
                 return
             end
         end
