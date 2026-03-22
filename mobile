@@ -7,13 +7,15 @@ local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 local Camera = workspace.CurrentCamera
 
 if PlayerGui:FindFirstChild("KutakWare_Final_Fix") then PlayerGui.KutakWare_Final_Fix:Destroy() end
-local ScreenGui = Instance.new("ScreenGui", PlayerGui); ScreenGui.Name = "KutakWare_Final_Fix"; ScreenGui.ResetOnSpawn = false; ScreenGui.IgnoreGuiInset = true -- Игнорируем отступ сверху для точности
+local ScreenGui = Instance.new("ScreenGui", PlayerGui); ScreenGui.Name = "KutakWare_Final_Fix"; ScreenGui.ResetOnSpawn = false; ScreenGui.IgnoreGuiInset = true
 
 local Config = {
     Aimlock = false, WallCheck = true, AimPart = "Head", Smoothness = 0.15, AimFOV = 150, Prediction = 0.165,
     ESP = false, ESPNames = false, ESPHealth = false, ESPDistance = false,
     Crates = false, Safes = false, Scrap = false, FullBright = false
 }
+
+local LockedTarget = nil -- Переменная для фиксации цели
 
 local Orig = { Br = Lighting.Brightness, Cl = Lighting.ClockTime, Sh = Lighting.GlobalShadows, Amb = Lighting.OutdoorAmbient, Fg = Lighting.FogEnd }
 
@@ -101,24 +103,30 @@ CreateToggle("Safes", Tabs.Loot.P, "Safes")
 CreateToggle("Scrap", Tabs.Loot.P, "Scrap")
 CreateToggle("FullBright", Tabs.Misc.P, "FullBright")
 
--- ИСПРАВЛЕННЫЙ FOV CIRCLE (Идеально по центру)
-local FOV = Instance.new("Frame", ScreenGui)
-FOV.AnchorPoint = Vector2.new(0.5, 0.5)
-FOV.Position = UDim2.new(0.5, 0, 0.5, 0)
-FOV.BackgroundTransparency = 1
-Round(FOV, 1000)
-local Stroke = Instance.new("UIStroke", FOV); Stroke.Color = Color3.new(1, 1, 1)
-
-local AimBtn = Instance.new("TextButton", ScreenGui); AimBtn.Size = UDim2.new(0, 90, 0, 90); AimBtn.Position = UDim2.new(0.8, 0, 0.4, 0); AimBtn.Text = "AIM"; AimBtn.BackgroundColor3 = Color3.fromRGB(30,30,30); AimBtn.TextColor3 = Color3.new(1,1,1); Round(AimBtn, 45); AimBtn.BackgroundTransparency = 0.5; AimBtn.Visible = false
-MakeDraggable(AimBtn, AimBtn)
+local FOV = Instance.new("Frame", ScreenGui); FOV.AnchorPoint = Vector2.new(0.5, 0.5); FOV.Position = UDim2.new(0.5, 0, 0.5, 0); FOV.BackgroundTransparency = 1; Round(FOV, 1000); local Stroke = Instance.new("UIStroke", FOV); Stroke.Color = Color3.new(1, 1, 1)
+local AimBtn = Instance.new("TextButton", ScreenGui); AimBtn.Size = UDim2.new(0, 90, 0, 90); AimBtn.Position = UDim2.new(0.8, 0, 0.4, 0); AimBtn.Text = "AIM"; AimBtn.BackgroundColor3 = Color3.fromRGB(30,30,30); AimBtn.TextColor3 = Color3.new(1,1,1); Round(AimBtn, 45); AimBtn.BackgroundTransparency = 0.5; AimBtn.Visible = false; MakeDraggable(AimBtn, AimBtn)
 
 local AimActive = false
 AimBtn.MouseButton1Click:Connect(function()
     AimActive = not AimActive
     AimBtn.BackgroundColor3 = AimActive and Color3.fromRGB(60, 60, 60) or Color3.fromRGB(30, 30, 30)
+    if not AimActive then LockedTarget = nil end -- Сброс цели при выключении
 end)
 
 local MenuBtn = Instance.new("TextButton", ScreenGui); MenuBtn.Size = UDim2.new(0, 60, 0, 60); MenuBtn.Position = UDim2.new(0, 20, 0.1, 0); MenuBtn.Text = "KW"; MenuBtn.BackgroundColor3 = Color3.fromRGB(30,30,30); MenuBtn.TextColor3 = Color3.new(1,1,1); Round(MenuBtn, 30); MakeDraggable(MenuBtn, MenuBtn); MenuBtn.MouseButton1Click:Connect(function() Main.Visible = not Main.Visible end)
+
+-- Функция проверки видимости (WallCheck)
+local function IsVisible(part, character)
+    if not Config.WallCheck then return true end
+    local r = RaycastParams.new()
+    r.FilterDescendantsInstances = {LocalPlayer.Character, character}
+    r.FilterType = Enum.RaycastFilterType.Exclude
+    local cast = workspace:Raycast(Camera.CFrame.Position, (part.Position - Camera.CFrame.Position).Unit * 1000, r)
+    if cast and cast.Instance and cast.Instance.CanCollide and cast.Instance.Transparency < 0.5 then
+        return false
+    end
+    return true
+end
 
 RunService.RenderStepped:Connect(function()
     FOV.Visible = Config.Aimlock; FOV.Size = UDim2.new(0, Config.AimFOV * 2, 0, Config.AimFOV * 2)
@@ -126,34 +134,34 @@ RunService.RenderStepped:Connect(function()
     if Config.FullBright then Lighting.Brightness = 2; Lighting.ClockTime = 14; Lighting.FogEnd = 100000; Lighting.GlobalShadows = false; Lighting.OutdoorAmbient = Color3.new(1,1,1) end
     
     if AimActive and Config.Aimlock then
+        -- Если цель уже зафиксирована, проверяем, жива ли она и видна ли
+        if LockedTarget and LockedTarget.Parent and LockedTarget.Parent:FindFirstChild("Humanoid") and LockedTarget.Parent.Humanoid.Health > 0 then
+            local s, on = Camera:WorldToViewportPoint(LockedTarget.Position)
+            local dist = (Vector2.new(s.X, s.Y) - Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)).Magnitude
+            
+            if on and dist <= Config.AimFOV and IsVisible(LockedTarget, LockedTarget.Parent) then
+                Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, LockedTarget.Position + (LockedTarget.Velocity * Config.Prediction)), Config.Smoothness)
+                return -- Продолжаем держать эту цель
+            else
+                LockedTarget = nil -- Потеряли цель
+            end
+        end
+
+        -- Если цели нет, ищем новую ближайшую к центру экрана
         local t, d = nil, Config.AimFOV
         for _, v in pairs(Players:GetPlayers()) do
             if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild(Config.AimPart) then
-                local p = v.Character[Config.AimPart]; 
+                local p = v.Character[Config.AimPart]
                 local s, on = Camera:WorldToViewportPoint(p.Position)
                 if on then
                     local m = (Vector2.new(s.X, s.Y) - Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)).Magnitude
-                    if m < d then
-                        local vis = true
-                        -- ИСПРАВЛЕННЫЙ WallCheck
-                        if Config.WallCheck then
-                            local r = RaycastParams.new()
-                            r.FilterDescendantsInstances = {LocalPlayer.Character, v.Character}
-                            r.FilterType = Enum.RaycastFilterType.Exclude
-                            local cast = workspace:Raycast(Camera.CFrame.Position, (p.Position - Camera.CFrame.Position).Unit * 1000, r)
-                            if cast and cast.Instance then
-                                -- Если луч попал в объект, который не является прозрачным или мелким декором
-                                if cast.Instance.CanCollide and cast.Instance.Transparency < 0.5 then
-                                    vis = false 
-                                end
-                            end
-                        end
-                        if vis then t = p; d = m end
+                    if m < d and IsVisible(p, v.Character) then
+                        t = p; d = m
                     end
                 end
             end
         end
-        if t then Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, t.Position + (t.Velocity * Config.Prediction)), Config.Smoothness) end
+        LockedTarget = t
     end
 end)
 
@@ -165,15 +173,11 @@ local function AddESP(p)
     RunService.RenderStepped:Connect(function()
         if Config.ESP and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
             local root = p.Character.HumanoidRootPart
-            -- ИСПРАВЛЕННОЕ ПОЛОЖЕНИЕ ESP
             local pos, on = Camera:WorldToViewportPoint(root.Position)
             if on then
-                local sz = 4000 / pos.Z -- Масштабирование от дистанции
-                b.Visible = true; 
-                b.Size = UDim2.new(0, sz * 0.7, 0, sz)
-                -- Центрируем рамку строго по координатам игрока (без смещения под карту)
+                local sz = 4000 / pos.Z
+                b.Visible = true; b.Size = UDim2.new(0, sz * 0.7, 0, sz)
                 b.Position = UDim2.new(0, pos.X - (b.Size.X.Offset/2), 0, pos.Y - (b.Size.Y.Offset/2))
-                
                 h.Visible = Config.ESPHealth; n.Visible = Config.ESPNames
                 n.Text = p.Name .. (Config.ESPDistance and " ["..math.floor(pos.Z).."]" or "")
                 if p.Character:FindFirstChild("Humanoid") then h.Size = UDim2.new(0, 2, p.Character.Humanoid.Health/p.Character.Humanoid.MaxHealth, 0) end
