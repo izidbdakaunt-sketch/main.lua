@@ -115,55 +115,45 @@ end)
 
 local MenuBtn = Instance.new("TextButton", ScreenGui); MenuBtn.Size = UDim2.new(0, 60, 0, 60); MenuBtn.Position = UDim2.new(0, 20, 0.1, 0); MenuBtn.Text = "KW"; MenuBtn.BackgroundColor3 = Color3.fromRGB(30,30,30); MenuBtn.TextColor3 = Color3.new(1,1,1); Round(MenuBtn, 30); MakeDraggable(MenuBtn, MenuBtn); MenuBtn.MouseButton1Click:Connect(function() Main.Visible = not Main.Visible end)
 
--- Функция проверки видимости (WallCheck)
-local function IsVisible(part, character)
+-- ОБНОВЛЕННАЯ ФУНКЦИЯ WALLCHECK
+local function IsVisible(part, targetCharacter)
     if not Config.WallCheck then return true end
-    local r = RaycastParams.new()
-    r.FilterDescendantsInstances = {LocalPlayer.Character, character}
-    r.FilterType = Enum.RaycastFilterType.Exclude
-    local cast = workspace:Raycast(Camera.CFrame.Position, (part.Position - Camera.CFrame.Position).Unit * 1000, r)
-    if cast and cast.Instance and cast.Instance.CanCollide and cast.Instance.Transparency < 0.5 then
+    
+    local origin = Camera.CFrame.Position
+    local direction = (part.Position - origin)
+    
+    local rParams = RaycastParams.new()
+    -- Исключаем только себя, чтобы луч мог "удариться" в цель
+    rParams.FilterDescendantsInstances = {LocalPlayer.Character} 
+    rParams.FilterType = Enum.RaycastFilterType.Exclude
+    rParams.IgnoreWater = true
+
+    local result = workspace:Raycast(origin, direction, rParams)
+
+    -- Если луч ни обо что не ударился (редко, но бывает) — цель видна
+    if not result then return true end
+    
+    -- Если объект, в который попал луч, принадлежит цели — значит стен между нами нет
+    if result.Instance:IsDescendantOf(targetCharacter) then
+        return true
+    end
+
+    -- Если попали в стену (не прозрачную и коллизийную)
+    if result.Instance.CanCollide and result.Instance.Transparency < 0.5 then
         return false
     end
+
     return true
 end
 
-RunService.RenderStepped:Connect(function()
-    FOV.Visible = Config.Aimlock; FOV.Size = UDim2.new(0, Config.AimFOV * 2, 0, Config.AimFOV * 2)
-    AimBtn.Visible = Config.Aimlock
-    if Config.FullBright then Lighting.Brightness = 2; Lighting.ClockTime = 14; Lighting.FogEnd = 100000; Lighting.GlobalShadows = false; Lighting.OutdoorAmbient = Color3.new(1,1,1) end
-    
-    if AimActive and Config.Aimlock then
-        -- Если цель уже зафиксирована, проверяем, жива ли она и видна ли
-        if LockedTarget and LockedTarget.Parent and LockedTarget.Parent:FindFirstChild("Humanoid") and LockedTarget.Parent.Humanoid.Health > 0 then
-            local s, on = Camera:WorldToViewportPoint(LockedTarget.Position)
-            local dist = (Vector2.new(s.X, s.Y) - Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)).Magnitude
-            
-            if on and dist <= Config.AimFOV and IsVisible(LockedTarget, LockedTarget.Parent) then
-                Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, LockedTarget.Position + (LockedTarget.Velocity * Config.Prediction)), Config.Smoothness)
-                return -- Продолжаем держать эту цель
-            else
-                LockedTarget = nil -- Потеряли цель
-            end
-        end
-
-        -- Если цели нет, ищем новую ближайшую к центру экрана
-        local t, d = nil, Config.AimFOV
-        for _, v in pairs(Players:GetPlayers()) do
-            if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild(Config.AimPart) then
-                local p = v.Character[Config.AimPart]
-                local s, on = Camera:WorldToViewportPoint(p.Position)
-                if on then
-                    local m = (Vector2.new(s.X, s.Y) - Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)).Magnitude
-                    if m < d and IsVisible(p, v.Character) then
-                        t = p; d = m
-                    end
-                end
-            end
-        end
-        LockedTarget = t
+-- В RenderStepped в блоке поиска новой цели (цикл for) замени проверку на эту:
+if on then
+    local m = (Vector2.new(s.X, s.Y) - Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)).Magnitude
+    -- Проверяем: в радиусе FOV И виден ли персонаж через обновленный WallCheck
+    if m < d and IsVisible(p, v.Character) then
+        t = p; d = m
     end
-end)
+end
 
 local function AddESP(p)
     local b = Instance.new("Frame", ScreenGui); b.BackgroundTransparency = 1; b.Visible = false; Instance.new("UIStroke", b).Color = Color3.new(1,1,1)
